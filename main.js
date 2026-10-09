@@ -1,30 +1,45 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Set dynamic year in footer
+  // Update year
   const yearEl = document.getElementById('current-year');
-  if (yearEl) {
-    yearEl.textContent = new Date().getFullYear();
-  }
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Handle active navigation states
-  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-  const navLinks = document.querySelectorAll('nav a');
-  
-  navLinks.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href === currentPath || (currentPath === '' && href === 'index.html')) {
-      link.classList.add('active');
-    }
+  // Highlight Active Link
+  const path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('nav a').forEach(a => {
+    if (a.getAttribute('href') === path) a.classList.add('active');
   });
 
-  // Contact form submission handler
-  const contactForm = document.getElementById('contact-form');
+  // Initialize EmailJS (Public Key implementation)
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init("YOUR_PUBLIC_KEY"); // Replace with your free EmailJS key
+  }
+
+  // Real Email Sender Handler
+  const contactForm = document.getElementById('real-contact-form');
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const statusEl = document.getElementById('form-status');
-      statusEl.textContent = 'Thank you! Your message has been sent successfully.';
-      statusEl.style.color = '#56a5ff';
-      contactForm.reset();
+      const status = document.getElementById('form-status');
+      const btn = contactForm.querySelector('button');
+
+      btn.disabled = true;
+      btn.textContent = 'Transmitting Message...';
+
+      // Send actual email via EmailJS API
+      emailjs.sendForm('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', contactForm)
+        .then(() => {
+          status.style.color = '#00d2ff';
+          status.textContent = '✔ Inquiry delivered successfully. Our partners will reach out shortly.';
+          contactForm.reset();
+        }, (error) => {
+          status.style.color = '#ff4d4d';
+          status.textContent = '❌ Transmission failed. Please try WhatsApp support directly.';
+          console.error('Email Error:', error);
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = 'Send Formal Inquiry →';
+        });
     });
   }
 });
