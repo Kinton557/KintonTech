@@ -3,70 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Us | KintonTech Technologies</title>
+  <title>Engage Firm | KintonTech Technologies</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script src="main.js" defer></script>
 </head>
 <body>
 
 <header>
   <div class="container nav">
-    <a class="logo" href="index.html">Kinton<span>Tech</span><small>TECHNOLOGIES</small></a>
+    <a href="index.html" class="logo">Kinton<span>Tech</span><small>Technologies</small></a>
     <nav>
       <a href="index.html">Home</a>
-      <a href="services.html">Services</a>
-      <a href="about.html">About</a>
-      <a href="portfolio.html">Work</a>
+      <a href="services.html">Capabilities</a>
+      <a href="about.html">Firm Profile</a>
+      <a href="portfolio.html">Ventures & Work</a>
       <a href="contact.html">Contact</a>
     </nav>
-    <a class="button" href="contact.html">Start Project &rarr;</a>
+    <a href="contact.html" class="button">Engage Firm →</a>
   </div>
 </header>
 
 <main>
   <section>
-    <div class="container" style="max-width: 680px;">
-      <div class="section-heading" style="text-align: center; margin: 0 auto 32px;">
-        <div class="eyebrow">Get In Touch</div>
-        <h2>Start Your Project</h2>
-        <p>Send your requirements directly to our team, or connect immediately over WhatsApp.</p>
+    <div class="container" style="max-width: 720px;">
+      <div style="text-align: center; margin-bottom: 36px;">
+        <div class="eyebrow">Direct Engagement</div>
+        <h2>Initiate a Technical Project</h2>
+        <p>Submit project specifications to our engineering team.</p>
       </div>
 
-      <div style="background: var(--panel); border: 1px solid var(--line); padding: 32px; border-radius: var(--border-radius);">
-        <form id="contact-form">
-          <div class="form-group">
-            <label for="name">Full Name</label>
-            <input type="text" id="name" class="form-control" placeholder="Jane Doe" required>
+      <div class="glass-panel" style="padding: 40px;">
+        <form id="real-contact-form">
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 13px; font-weight: 600;">Full Name / Representative</label>
+            <input type="text" name="user_name" class="form-control" placeholder="e.g. Tendai Moyo" required>
           </div>
 
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" class="form-control" placeholder="jane@company.com" required>
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 13px; font-weight: 600;">Corporate Email</label>
+            <input type="email" name="user_email" class="form-control" placeholder="e.g. tendai@company.co.zw" required>
           </div>
 
-          <div class="form-group">
-            <label for="service">Service Needed</label>
-            <select id="service" class="form-control">
-              <option value="web">Website Development</option>
-              <option value="mobile">Mobile Application</option>
-              <option value="branding">Brand & Logo Design</option>
-              <option value="other">IT Consulting</option>
+          <div style="margin-bottom: 20px;">
+            <label style="font-size: 13px; font-weight: 600;">Service Category</label>
+            <select name="service_type" class="form-control">
+              <option value="Enterprise Web Systems">Enterprise Web Systems</option>
+              <option value="Mobile Application Build">Mobile Application Build</option>
+              <option value="Brand Architecture">Brand Architecture</option>
+              <option value="Technical Consulting">Technical Consulting</option>
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="message">Project Overview</label>
-            <textarea id="message" class="form-control" placeholder="Describe your project scope, goals, and timeline..." required></textarea>
+          <div style="margin-bottom: 24px;">
+            <label style="font-size: 13px; font-weight: 600;">Project Requirements & Timeline</label>
+            <textarea name="message" class="form-control" style="min-height: 140px;" placeholder="Outline your technical requirements..." required></textarea>
           </div>
 
-          <button type="submit" class="button" style="width: 100%;">Submit Inquiry &rarr;</button>
-          <div id="form-status" style="margin-top: 16px; font-size: 14px; text-align: center;"></div>
+          <button type="submit" class="button" style="width: 100%; justify-content: center;">Send Formal Inquiry →</button>
+          <div id="form-status" style="margin-top: 18px; font-size: 14px; text-align: center;"></div>
         </form>
 
-        <div style="text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line);">
-          <p style="color: var(--muted); font-size: 14px; margin-bottom: 12px;">Prefer direct chat?</p>
-          <a class="button outline" href="https://wa.me/263775610805" target="_blank" rel="noopener">
-            Chat on WhatsApp (+263 77 561 0805)
+        <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line-color);">
+          <p style="margin-bottom: 12px; font-size: 14px;">Direct Partner WhatsApp Desk:</p>
+          <a href="https://wa.me/263775610805" target="_blank" rel="noopener" class="button outline">
+            Connect via WhatsApp (+263 77 561 0805)
           </a>
         </div>
       </div>
@@ -75,9 +76,8 @@
 </main>
 
 <footer>
-  <div class="container footer-row">
-    <span>&copy; <span id="current-year"></span> KintonTech Technologies.</span>
-    <a href="index.html">Back to Home &rarr;</a>
+  <div class="container">
+    <span>© <span id="current-year"></span> KintonTech Technologies.</span>
   </div>
 </footer>
 
