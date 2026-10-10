@@ -1,18 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://kintontechnologies.co.zw/</loc>
-  </url>
-  <url>
-    <loc>https://kintontechnologies.co.zw/about.html</loc>
-  </url>
-  <url>
-    <loc>https://kintontechnologies.co.zw/services.html</loc>
-  </url>
-  <url>
-    <loc>https://kintontechnologies.co.zw/portfolio.html</loc>
-  </url>
-  <url>
-    <loc>https://kintontechnologies.co.zw/contact.html</loc>
-  </url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://kintontechnologies.co.zw/</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/shop.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/services.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/labs.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/about.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/contact.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/terms.html</loc></url>
+  <url><loc>https://kintontechnologies.co.zw/privacy.html</loc></url>
 </urlset>
-

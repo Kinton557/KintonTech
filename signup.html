@@ -5,16 +5,16 @@
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-6DCN44LECE');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>About | Kinton Technologies</title>
-<meta name="description" content="Kinton Technologies is a software and design studio in Kadoma, Zimbabwe, founded by Tanaka Shanon Mujikijera and Denzel Mangani.">
+<title>Create account | Kinton Technologies</title>
+<meta name="description" content="Create a Kinton Technologies account to order and track your projects.">
 <meta name="theme-color" content="#151515">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<link rel="canonical" href="https://kintontechnologies.co.zw/about.html">
+<meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kinton Technologies">
-<meta property="og:title" content="About | Kinton Technologies">
-<meta property="og:description" content="Kinton Technologies is a software and design studio in Kadoma, Zimbabwe, founded by Tanaka Shanon Mujikijera and Denzel Mangani.">
-<meta property="og:url" content="https://kintontechnologies.co.zw/about.html">
+<meta property="og:title" content="Create account | Kinton Technologies">
+<meta property="og:description" content="Create a Kinton Technologies account to order and track your projects.">
+<meta property="og:url" content="https://kintontechnologies.co.zw/signup.html">
 <meta property="og:image" content="https://kintontechnologies.co.zw/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.png" type="image/png">
@@ -27,7 +27,7 @@
 <script src="store.js" defer></script>
 <script src="app.js" defer></script>
 </head>
-<body data-page="about">
+<body data-page="signup">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap bar">
@@ -41,21 +41,24 @@
   </div>
 </header>
 <main id="main">
-<div class="page-head"><div class="wrap"><h1>About Kinton</h1><p>Building ideas. Creating solutions.</p></div></div>
-<div class="section"><div class="wrap two">
-  <div class="prose">
-    <p class="lead" data-content="aboutText">Kinton Technologies is a software and design studio based in Kadoma, Zimbabwe.</p>
-    <p>We started Kinton because local businesses and organisations deserve professional websites, apps and brands, built close to home and priced fairly. We keep our team small so you always know who is working on your project.</p>
-    <p>We build things in three areas: websites, mobile apps and brand identity. Whatever the size of the idea, we start by listening, agree what we are making and then build it with you.</p>
-    <p><a class="btn" href="contact.html">Talk to us</a></p>
-  </div>
-  <div>
-    <h2 style="font-size:1.3rem">Founders</h2>
-    <div class="people" style="grid-template-columns:1fr">
-      <div class="person"><div class="avatar" aria-hidden="true">TM</div><div><h3>Tanaka Shanon Mujikijera</h3><p>Founder and CEO</p></div></div>
-      <div class="person"><div class="avatar" aria-hidden="true">DM</div><div><h3>Denzel Mangani</h3><p>Co-founder</p></div></div>
+<div class="auth"><div class="narrow">
+  <h1>Create your account</h1>
+  <p class="muted">Needed to place orders and see their progress.</p>
+  <form class="panel" id="signup-form" novalidate>
+    <div class="seg" role="radiogroup" aria-label="Account type">
+      <label><input type="radio" name="role" value="customer" checked><span>Customer</span></label>
+      <label><input type="radio" name="role" value="admin"><span>Staff / Admin</span></label>
     </div>
-  </div>
+    <p class="hint" id="admin-note" hidden style="margin-top:-.4rem;margin-bottom:1rem">Staff access needs approval from an admin. Until then you can use the site as a customer.</p>
+    <div class="field"><label for="name">Full name</label><input id="name" type="text" autocomplete="name" maxlength="80" required></div>
+    <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" maxlength="120" required></div>
+    <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><label class="check" style="margin-top:.5rem;font-size:.85rem"><input type="checkbox" id="show-pw"> Show password</label><div class="hint">At least 8 characters.</div></div>
+    <div class="field"><label class="check"><input type="checkbox" id="agree"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener"><u>terms</u></a> and have read the <a href="privacy.html" target="_blank" rel="noopener"><u>privacy notice</u></a>.</span></label></div>
+    <div class="captcha" id="captcha"></div>
+    <button class="btn btn-block" type="submit">Create account</button>
+    <div id="msg" class="msg" role="alert"></div>
+  </form>
+  <p class="alt">Already have an account? <a id="to-signin" href="signin.html">Sign in</a></p>
 </div></div>
 </main>
 <footer class="site-footer">

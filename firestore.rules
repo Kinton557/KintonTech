@@ -1,0 +1,148 @@
+rules_version = '2';
+// Kinton Technologies - Firestore security rules.
+// Paste this whole file into: Firebase console > Firestore Database > Rules > Publish.
+// These rules are what REALLY protect your data. The checks in the website code only hide buttons.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function adminDoc() { return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data; }
+    // A staff member is anyone with a (non-suspended) document in /admins
+    function isStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && adminDoc().get('suspended', false) != true;
+    }
+    function role() { return adminDoc().get('role', 'staff'); }
+    function isOwner() { return isStaff() && role() == 'owner'; }
+    function isAdminRole() { return isStaff() && role() in ['owner', 'admin']; }
+    // Owners and admins can use every section; staff only the sections ticked for them
+    function can(section) { return isStaff() && (role() in ['owner', 'admin'] || section in adminDoc().get('perms', [])); }
+    function customerSuspended() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true;
+    }
+    function text(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
+
+    // ---------- customers ----------
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || can('users') || isAdminRole());
+      allow list: if isAdminRole();
+      // A new account can only describe itself. It can never give itself a role.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'email', 'adminRequested', 'createdAt'])
+        && text(request.resource.data.name, 80) && text(request.resource.data.email, 120)
+        && request.resource.data.adminRequested is bool
+        && request.resource.data.createdAt == request.time;
+      // Customers may only rename themselves. Admins may suspend or clear a staff request.
+      allow update: if (signedIn() && request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+                        && text(request.resource.data.name, 80))
+                    || (isAdminRole() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['suspended', 'adminRequested']));
+      allow delete: if false;
+    }
+
+    // ---------- staff: role + per-section access ----------
+    // The FIRST owner is created by hand in the console (see SETUP.md). The owner document can never
+    // be changed or deleted from the website.
+    match /admins/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow list: if isAdminRole();
+      allow create: if ((isOwner() && request.resource.data.role in ['admin', 'staff'])
+                        || (isAdminRole() && request.resource.data.role == 'staff'))
+                    && request.resource.data.keys().hasOnly(['name', 'email', 'role', 'perms', 'suspended', 'createdAt'])
+                    && request.resource.data.perms is list;
+      allow update: if resource.data.role != 'owner'
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'perms', 'suspended'])
+                    && request.resource.data.role in ['admin', 'staff']
+                    && ((isOwner())
+                        || (isAdminRole() && resource.data.role == 'staff' && request.resource.data.role == 'staff'));
+      allow delete: if resource.data.role != 'owner'
+                    && (isOwner() || (isAdminRole() && resource.data.role == 'staff'));
+    }
+
+    // ---------- shop ----------
+    match /products/{id} {
+      allow read: if true;
+      allow create, update: if can('products')
+        && request.resource.data.keys().hasOnly(['name', 'category', 'price', 'description', 'image', 'featured', 'active', 'updatedAt'])
+        && text(request.resource.data.name, 80) && request.resource.data.price is number
+        && request.resource.data.price >= 0 && request.resource.data.price <= 100000
+        && request.resource.data.description is string && request.resource.data.description.size() <= 300
+        && request.resource.data.image is string && request.resource.data.image.size() <= 300000;
+      allow delete: if can('products');
+    }
+
+    match /orders/{id} {
+      allow create: if signedIn() && !customerSuspended()
+        && request.resource.data.keys().hasOnly(['ref', 'userId', 'userName', 'userEmail', 'phone', 'note', 'items', 'total', 'status', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'new'
+        && request.resource.data.items is list && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 30
+        && request.resource.data.total is number && request.resource.data.total >= 0
+        && text(request.resource.data.phone, 20)
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.createdAt == request.time;
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || can('orders') || can('payments'));
+      allow update: if can('orders') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if can('orders');
+    }
+
+    // Contact-form messages. Anyone may send one; only support staff can read them.
+    match /inquiries/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'topic', 'message', 'createdAt'])
+        && text(request.resource.data.name, 80) && text(request.resource.data.email, 120)
+        && request.resource.data.message is string && request.resource.data.message.size() >= 10 && request.resource.data.message.size() <= 1500
+        && request.resource.data.createdAt == request.time;
+      allow read, delete: if can('tickets');
+      allow update: if false;
+    }
+
+    // ---------- support tickets ----------
+    match /tickets/{id} {
+      allow create: if signedIn() && !customerSuspended()
+        && request.resource.data.keys().hasOnly(['userId', 'userName', 'userEmail', 'subject', 'message', 'priority', 'status', 'replies', 'createdAt', 'updatedAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.replies.size() == 0
+        && text(request.resource.data.subject, 100) && text(request.resource.data.message, 1000);
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || can('tickets'));
+      allow update: if can('tickets')
+        || (signedIn() && !customerSuspended() && resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies', 'status', 'updatedAt'])
+            && request.resource.data.status == 'open'
+            && request.resource.data.replies.size() >= resource.data.replies.size()
+            && request.resource.data.replies.size() <= 100);
+      allow delete: if can('tickets');
+    }
+
+    // ---------- business records (staff only, per section) ----------
+    match /projects/{id}  { allow read, write: if can('projects'); }
+    match /invoices/{id}  { allow read, write: if can('payments'); }
+    match /payments/{id}  { allow read, write: if can('payments'); }
+
+    match /labs/{id} {
+      allow read: if resource.data.public == true || can('labs');   // public Labs page only sees public items
+      allow write: if can('labs');
+    }
+
+    // Editable website wording (public to read, staff with "content" access to change)
+    match /content/{id} {
+      allow read: if true;
+      allow write: if can('content');
+    }
+
+    // Activity log: any staff member can add a line; nobody can edit or delete lines.
+    match /activity/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['by', 'text', 'createdAt', 'updatedAt'])
+        && text(request.resource.data.text, 200);
+      allow update, delete: if false;
+    }
+
+    // Everything else is closed.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
