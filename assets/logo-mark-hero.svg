@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 393" role="img" aria-labelledby="title desc">
+  <title id="title">Kinton Technologies hero mark</title>
+  <desc id="desc">Large brand monogram for the homepage hero section.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f3d783"/>
+      <stop offset="100%" stop-color="#b9871d"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="393" fill="#151515"/>
+  <g transform="translate(34 26)">
+    <path d="M48 12V290H104V165L194 290H278L170 164L278 12H214L104 127V12H48Z" fill="url(#gold)"/>
+    <path d="M92 12V290H142V170L197 290H237L183 215L247 12H203L142 138V12H92Z" fill="#fff0c9" opacity="0.9"/>
+  </g>
+</svg>
