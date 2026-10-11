@@ -10,11 +10,11 @@ window.KINTON_CONFIG = {
   // 1) Paste your Firebase web config here (Firebase console > Project settings > Your apps).
   //    While apiKey starts with "PASTE", the site runs in DEMO MODE (data stays in this browser only).
   firebase: {
-    apiKey: "PASTE_YOUR_API_KEY",
-    authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-    projectId: "PASTE_YOUR_PROJECT_ID",
-    appId: "PASTE_YOUR_APP_ID"
-  },
+apiKey: "AIzaSyDoSfxKsVyrt2ME6to4TYNqOEiOuIikaoA",
+authDomain: "kinton-technologies-26d08.firebaseapp.com",
+projectId: "kinton-technologies-26d08",
+appId: "1:384922068250:web:6f8a78cde94870798cb8a3"
+},
 
   // 2) Google reCAPTCHA v2 ("I'm not a robot" checkbox) SITE key.
   //    The key below is Google's public TEST key: it always passes and shows a warning.
