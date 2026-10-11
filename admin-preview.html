@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kinton Technologies | Admin Preview</title>
+  <style>
+    :root {
+      --bg: #080d18;
+      --panel: #111b2e;
+      --line: #243550;
+      --blue: #3285ff;
+      --orange: #ff8a24;
+      --text: #f3f6fc;
+      --muted: #9aabc3;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand { font-size: 19px; font-weight: 800; }
+    .brand span { color: var(--orange); }
+    .tag { color: var(--muted); font-size: 12px; margin-top: 5px; }
+
+    .demo {
+      color: #ffd3a6;
+      background: #492b15;
+      border: 1px solid #885022;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    main { max-width: 1100px; margin: auto; padding: 24px 16px; }
+    h1 { font-size: 27px; margin-bottom: 8px; }
+    p { color: var(--muted); line-height: 1.6; }
+
+    .notice {
+      padding: 14px;
+      background: #172744;
+      border: 1px solid #2b4c7a;
+      border-radius: 12px;
+      margin: 22px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+    }
+
+    .number { font-size: 28px; font-weight: 800; margin: 12px 0; }
+    .label { color: var(--muted); font-size: 13px; }
+
+    .section-title { margin-top: 28px; font-size: 19px; }
+
+    .item {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .item:last-child { border-bottom: 0; }
+    .item strong { display: block; margin-bottom: 6px; }
+    .item small { color: var(--muted); }
+
+    button {
+      border: 0;
+      background: var(--blue);
+      color: white;
+      padding: 11px 14px;
+      border-radius: 9px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #243550;
+      border: 1px solid #405675;
+    }
+
+    footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 28px 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="brand">KINTON<span>TECHNOLOGIES</span></div>
+      <div class="tag">SKILLS TODAY. BETTER TOMORROW.</div>
+    </div>
+    <div class="demo">DEMO PREVIEW</div>
+  </header>
+
+  <main>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome to the Kinton Technologies management preview.</p>
+
+    <div class="notice">
+      <strong>Preview mode only.</strong>
+      These are sample figures and demonstration controls.
+      This page does not connect to Firebase, modify real records,
+      or grant administrative access.
+    </div>
+
+    <div class="stats">
+      <div class="card">
+        <div class="label">Customers</div>
+        <div class="number">128</div>
+        <div class="label">Sample figure</div>
+      </div>
+      <div class="card">
+        <div class="label">Orders</div>
+        <div class="number">24</div>
+        <div class="label">Sample figure</div>
+      </div>
+      <div class="card">
+        <div class="label">Projects</div>
+        <div class="number">8</div>
+        <div class="label">Sample figure</div>
+      </div>
+      <div class="card">
+        <div class="label">Support tickets</div>
+        <div class="number">5</div>
+        <div class="label">Sample figure</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Management modules</h2>
+    <div class="card">
+      <div class="item">
+        <strong>Products & Services</strong>
+        <small>Review website packages, apps and branding services.</small>
+      </div>
+      <div class="item">
+        <strong>Orders & Payments</strong>
+        <small>Preview order management and invoice workflows.</small>
+      </div>
+      <div class="item">
+        <strong>Client Projects</strong>
+        <small>Track project progress and delivery stages.</small>
+      </div>
+      <div class="item">
+        <strong>KintonTech Labs</strong>
+        <small>Review products, roadmaps and releases.</small>
+      </div>
+      <div class="item">
+        <strong>Support Tickets</strong>
+        <small>Preview customer support workflows.</small>
+      </div>
+      <div class="item">
+        <strong>Website Content</strong>
+        <small>Plan updates to public website content.</small>
+      </div>
+    </div>
+
+    <h2 class="section-title">Recent activity</h2>
+    <div class="card">
+      <div class="item">
+        <strong>Website packages</strong>
+        <small>Sample activity · Preview only</small>
+      </div>
+      <div class="item">
+        <strong>ZimSkills</strong>
+        <small>Product stage: Planned · Sample activity</small>
+      </div>
+      <div class="item">
+        <strong>Customer support</strong>
+        <small>Sample ticket waiting for review</small>
+      </div>
+    </div>
+
+    <button onclick="alert('This is a demo. No real records were changed.')">
+      Test preview
+    </button>
+    <button class="secondary" onclick="location.href='./'">
+      Back to website
+    </button>
+  </main>
+
+  <footer>
+    © Kinton Technologies · Admin design preview · Not a live admin panel
+  </footer>
+</body>
+  </html>
