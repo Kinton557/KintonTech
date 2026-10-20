@@ -19,7 +19,7 @@ appId: "1:384922068250:web:6f8a78cde94870798cb8a3"
   // 2) Google reCAPTCHA v2 ("I'm not a robot" checkbox) SITE key.
   //    The key below is Google's public TEST key: it always passes and shows a warning.
   //    Replace it with your own from https://www.google.com/recaptcha/admin
-  recaptchaSiteKey: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",
+  recaptchaSiteKey: "6Le27vctAAAAAEDJItSzB7Roys3Na1qwLDNGrn21",
 
   // 3) Optional but recommended: Firebase App Check (reCAPTCHA v3) site key.
   //    This makes Firebase itself reject traffic that doesn't come from your real site.
