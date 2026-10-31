@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X02H5XM8KT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-X02H5XM8KT');
+</script>
+<meta charset="UTF-8">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Payment result | Kinton Technologies</title>
+<meta name="description" content="Check the result of your Paynow payment.">
+<meta name="theme-color" content="#151515">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="canonical" href="https://kintontechnologies.co.zw/payment-result.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kinton Technologies">
+<meta property="og:title" content="Payment result | Kinton Technologies">
+<meta property="og:description" content="Check the result of your Paynow payment.">
+<meta property="og:url" content="https://kintontechnologies.co.zw/payment-result.html">
+<meta property="og:image" content="https://kintontechnologies.co.zw/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="config.js" defer></script>
+<script src="store.js" defer></script>
+<script src="app.js" defer></script>
+<script src="track.js" defer></script>
+<script src="motion.js" defer></script>
+<script src="guide.js" defer></script>
+</head>
+<body data-page="payresult">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="Kinton Technologies home"><img src="assets/logo-mark.png" alt="" width="34" height="37"><span class="brand-word">KINTON</span></a>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html" data-page="home">Home</a><a href="shop.html" data-page="shop">Shop</a><a href="services.html" data-page="services">Services</a><a href="labs.html" data-page="labs">Labs</a><a href="about.html" data-page="about">About</a><a href="contact.html" data-page="contact">Contact</a></nav>
+    <div class="actions">
+      <a class="icon-btn" href="cart.html" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.2l2 11h10.2l2-8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span class="cart-count" hidden>0</span></a>
+      <a class="account-link" id="account-link" href="signin.html">Sign in</a>
+      <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<div class="page-head"><div class="wrap"><h1>Payment result</h1><p id="sub">Checking with Paynow...</p></div></div>
+<div class="section"><div class="wrap">
+  <div class="panel" style="max-width:34rem">
+    <h2 id="title" style="margin-top:0">One moment</h2>
+    <p id="detail">We are confirming your payment directly with Paynow.</p>
+    <p style="font-size:.85rem;color:var(--muted)">Reference: <strong id="ref">-</strong></p>
+    <a class="btn btn-line" id="again" href="pay.html" hidden>Try again</a>
+    <a class="btn" id="home" href="index.html" hidden>Back to home</a>
+  </div>
+</div></div>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="index.html"><img src="assets/logo-mark-light.png" alt="" width="34" height="37"><span class="brand-word">KINTON</span></a>
+        <p>Building ideas. Creating solutions.</p>
+      </div>
+      <div><h4>Explore</h4><ul><li><a href="shop.html">Shop</a></li><li><a href="services.html">Services</a></li><li><a href="labs.html">Labs</a></li><li><a href="about.html">About us</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><h4>Your account</h4><ul><li><a href="signin.html">Sign in</a></li><li><a href="signup.html">Create account</a></li><li><a href="cart.html">Cart</a></li></ul></div>
+      <div><h4>Find us</h4><ul><li>Kadoma, Zimbabwe</li><li><a href="https://wa.me/263775610805" target="_blank" rel="noopener">WhatsApp +263 77 561 0805</a></li></ul></div>
+    </div>
+    <div class="copy"><span>&copy; <span class="year">2026</span> Kinton Technologies. All rights reserved.</span><span><a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a></span></div>
+  </div>
+</footer>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var cfg = window.KINTON_CONFIG || {};
+  var api = 'https://kinton-pay.onrender.com'; // change this if Render gave your service a different address
+  var ref = new URLSearchParams(location.search).get('ref') || '';
+  var $ = function (id) { return document.getElementById(id); };
+  var tries = 0;
+
+  function show(title, detail, done, retry) {
+    $('title').textContent = title;
+    $('detail').textContent = detail;
+    $('home').hidden = !done;
+    $('again').hidden = !retry;
+    if (done) $('sub').textContent = '';
+  }
+
+  function check() {
+    tries++;
+    fetch(api + '/paymentStatus?ref=' + encodeURIComponent(ref))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) return show('We could not find that payment', j.error, true, true);
+        var s = String(j.status || '').toLowerCase();
+        if (j.paid) return show('Payment received', 'Thank you. $' + Number(j.amount).toFixed(2) + ' was paid.', true, false);
+        if (/cancel|fail|declin|disputed|refund|mismatch/.test(s)) return show('Payment not completed', 'Status: ' + j.status + '. You have not been charged for this attempt.', true, true);
+        // still waiting (mobile money can take a moment): ask again for up to about a minute
+        if (tries < 12) { show('Waiting for payment', 'Status: ' + j.status + '. If you were asked for your PIN, please approve it.', false, false); return setTimeout(check, 5000); }
+        show('Still pending', 'Paynow has not confirmed this payment yet. Please check again in a few minutes.', true, true);
+      })
+      .catch(function () { show('Could not check the payment', 'Please refresh this page in a moment.', true, false); });
+  }
+
+  if (!/^KT-[A-Z0-9]+$/.test(ref)) return show('No payment to check', 'This page needs a payment reference.', true, true);
+  $('ref').textContent = ref;
+  check();
+});
+</script>
+</body>
+</html>
