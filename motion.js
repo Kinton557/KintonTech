@@ -110,15 +110,4 @@
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
   }
-  var deferred = null;
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault(); deferred = e;
-    ready(function () {
-      if (get('kt_install_dismissed') || document.querySelector('.install-btn')) return;
-      var foot = document.querySelector('.foot-grid > div:last-child ul'); if (!foot) return;
-      var li = document.createElement('li'); li.innerHTML = '<button type="button" class="link-btn install-btn">Install the app</button>';
-      li.firstChild.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.finally(function () { deferred = null; li.remove(); }); });
-      foot.appendChild(li);
-    });
-  });
 })();
