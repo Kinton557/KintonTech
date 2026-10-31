@@ -38,6 +38,7 @@
 <script src="track.js" defer></script>
 <script src="motion.js" defer></script>
 <script src="guide.js" defer></script>
+<style>[hidden]{display:none!important}</style>
 </head>
 <body data-page="pay">
 <a class="skip" href="#main">Skip to content</a>
@@ -58,10 +59,12 @@
   <form class="panel" id="pay-form" novalidate style="max-width:34rem">
     <div class="form-grid">
       <div class="field full"><label for="p-item">What are you paying for?</label><select id="p-item"><option value="demo">Kinton payment demo - $1.00</option></select></div>
+      <div class="field full"><label for="p-method">How do you want to pay?</label><select id="p-method"><option value="ecocash">EcoCash (PIN prompt on your phone)</option><option value="redirect">InnBucks, Zimswitch, bank and others</option></select></div>
       <div class="field"><label for="p-name">Full name</label><input id="p-name" type="text" autocomplete="name" maxlength="80" required></div>
-      <div class="field"><label for="p-phone">Phone number</label><input id="p-phone" type="tel" autocomplete="tel" maxlength="16" placeholder="0771234567" required></div>
+      <div class="field"><label for="p-phone" id="p-phone-label">EcoCash number</label><input id="p-phone" type="tel" autocomplete="tel" maxlength="16" placeholder="0771234567" required></div>
       <div class="field full"><label for="p-email">Email (for your receipt)</label><input id="p-email" type="email" autocomplete="email" maxlength="120"></div>
     </div>
+    <p id="test-note" hidden style="font-size:.85rem;color:var(--danger);margin:0 0 1rem">Test mode: no real money moves. For EcoCash use 0771111111 (success), 0772222222 (success after a delay), 0773333333 (cancelled) or 0774444444 (not enough money).</p>
     <button class="btn" type="submit" id="pay-btn">Pay now</button>
     <div id="msg" class="msg" role="alert"></div>
     <p style="font-size:.85rem;color:var(--muted);margin:1rem 0 0">Payments are processed by Paynow. We never see your card or wallet PIN.</p>
@@ -89,13 +92,21 @@ document.addEventListener('DOMContentLoaded', function () {
   var form = document.getElementById('pay-form');
   var btn = document.getElementById('pay-btn');
   var msg = document.getElementById('msg');
-  fetch(api + '/health').catch(function () {}); // wakes the payment server
+  var methodSel = document.getElementById('p-method');
+  var phoneLabel = document.getElementById('p-phone-label');
+  function syncMethod() { phoneLabel.textContent = methodSel.value === 'ecocash' ? 'EcoCash number' : 'Phone number'; }
+  methodSel.addEventListener('change', syncMethod);
+  // also wakes the payment server
+  fetch(api + '/health').then(function (r) { return r.json(); }).then(function (j) {
+    if (j.mode === 'test') document.getElementById('test-note').hidden = false;
+  }).catch(function () {});
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     msg.textContent = '';
     var data = {
       item: document.getElementById('p-item').value,
+      method: methodSel.value,
       name: document.getElementById('p-name').value.trim(),
       phone: document.getElementById('p-phone').value.trim(),
       email: document.getElementById('p-email').value.trim()
@@ -114,9 +125,10 @@ document.addEventListener('DOMContentLoaded', function () {
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (r) {
-        if (!r.ok || !r.j.redirectUrl) throw new Error(r.j.error || 'Could not start the payment.');
+        if (!r.ok || !(r.j.redirectUrl || r.j.mobile)) throw new Error(r.j.error || 'Could not start the payment.');
         clearTimeout(slow);
-        window.location.href = r.j.redirectUrl;
+        // EcoCash: the PIN prompt is on its way to the phone, so wait for the result on our own page.
+        window.location.href = r.j.mobile ? 'payment-result.html?ref=' + encodeURIComponent(r.j.ref) : r.j.redirectUrl;
       })
       .catch(function (err) {
         clearTimeout(slow);
