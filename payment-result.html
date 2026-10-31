@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var s = String(j.status || '').toLowerCase();
         if (j.paid) return show('Payment received', 'Thank you. $' + Number(j.amount).toFixed(2) + ' was paid.', true, false);
         if (/cancel|fail|declin|disputed|refund|mismatch/.test(s)) return show('Payment not completed', 'Status: ' + j.status + '. You have not been charged for this attempt.', true, true);
-        // still waiting (mobile money can take a moment): ask again for up to about a minute
-        if (tries < 12) { show('Waiting for payment', 'Status: ' + j.status + '. If you were asked for your PIN, please approve it.', false, false); return setTimeout(check, 5000); }
+        // still waiting (mobile money can take a moment): ask again for up to about two minutes
+        if (tries < 24) { show('Waiting for payment', 'Status: ' + j.status + '. If EcoCash asked for your PIN, please enter it on your phone.', false, false); return setTimeout(check, 5000); }
         show('Still pending', 'Paynow has not confirmed this payment yet. Please check again in a few minutes.', true, true);
       })
       .catch(function () { show('Could not check the payment', 'Please refresh this page in a moment.', true, false); });
