@@ -259,7 +259,7 @@
         '<div class="field"><label for="o-phone">Phone / WhatsApp number</label><input id="o-phone" type="tel" autocomplete="tel" placeholder="e.g. 077 123 4567" required maxlength="20"></div>' +
         '<div class="field"><label for="o-note">Anything we should know? (optional)</label><textarea id="o-note" maxlength="500" placeholder="Your business name, deadline, ideas..."></textarea></div>' +
         '<button class="btn btn-block" type="submit">Place order</button><div id="o-msg" class="msg" role="alert"></div>' +
-        '<p class="hint">Placing an order does not charge you. We confirm scope, price and payment with you on WhatsApp first.</p></form>';
+        '<p class="hint">Placing an order does not charge you. Your invoice is created straight away, and you can pay it online whenever you are ready.</p></form>';
       $('#order-form').addEventListener('submit', place);
     }
     function place(e) {
@@ -276,6 +276,7 @@
           $('#done-ref').textContent = o.ref;
           var text = 'Hi Kinton, I just placed order ' + o.ref + ' on your website:\n' + items.map(function (i) { return '- ' + i.qty + ' x ' + i.name; }).join('\n') + '\nTotal: ' + (total > 0 ? money(total) : 'to be quoted');
           $('#done-wa').href = waLink(text);
+          var inv = $('#done-inv'); if (inv) { if (total > 0) inv.href = 'invoice.html?id=' + encodeURIComponent(o.id); else inv.hidden = true; }
           window.scrollTo(0, 0);
         }).catch(function (err) { say(msg, err.message); btn.disabled = false; btn.textContent = 'Place order'; });
     }
@@ -389,7 +390,9 @@
       box.innerHTML = os.length ? os.map(function (o) {
         return '<article class="row-card"><header><h3>Order ' + esc(o.ref) + '</h3><span class="badge ' + esc(String(o.status).replace(/\s/g, '-')) + '">' + esc(o.status) + '</span></header>' +
           '<div class="meta">' + esc(fmtDate(o.createdAt)) + '</div><ul>' + (o.items || []).map(function (i) { return '<li>' + esc(i.qty) + ' &times; ' + esc(i.name) + '</li>'; }).join('') + '</ul>' +
-          '<strong>' + (o.total > 0 ? money(o.total) : 'Quote to follow') + '</strong></article>';
+          '<strong>' + (o.total > 0 ? money(o.total) : 'Quote to follow') + '</strong>' +
+          (o.total > 0 ? ' <span class="badge ' + (o.paid ? 'paid' : 'pending') + '">' + (o.paid ? 'Paid' : 'Unpaid') + '</span>' : '') +
+          (o.id ? ' <a class="btn btn-line btn-sm" href="invoice.html?id=' + encodeURIComponent(o.id) + '">' + (o.paid || !(o.total > 0) ? 'View invoice' : 'Invoice &amp; pay') + '</a>' : '') + '</article>';
       }).join('') : '<div class="empty"><h3>No orders yet</h3><p>When you place an order it will appear here.</p><a class="btn" href="shop.html">Browse the shop</a></div>';
     }).catch(function () { box.innerHTML = '<div class="empty">We could not load your orders. Please reload.</div>'; });
   };

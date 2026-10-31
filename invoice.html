@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X02H5XM8KT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-X02H5XM8KT');
+</script>
+<meta charset="UTF-8">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Invoice | Kinton Technologies</title>
+<meta name="description" content="Your Kinton Technologies invoice.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#151515">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="canonical" href="https://kintontechnologies.co.zw/invoice.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kinton Technologies">
+<meta property="og:title" content="Invoice | Kinton Technologies">
+<meta property="og:description" content="Your Kinton Technologies invoice.">
+<meta property="og:url" content="https://kintontechnologies.co.zw/invoice.html">
+<meta property="og:image" content="https://kintontechnologies.co.zw/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="config.js" defer></script>
+<script src="store.js" defer></script>
+<script src="app.js" defer></script>
+<script src="track.js" defer></script>
+<script src="motion.js" defer></script>
+<script src="guide.js" defer></script>
+</head>
+<body data-page="invoice">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="Kinton Technologies home"><img src="assets/logo-mark.png" alt="" width="34" height="37"><span class="brand-word">KINTON</span></a>
+    <nav id="nav" class="nav" aria-label="Main"><a href="index.html" data-page="home">Home</a><a href="shop.html" data-page="shop">Shop</a><a href="services.html" data-page="services">Services</a><a href="labs.html" data-page="labs">Labs</a><a href="about.html" data-page="about">About</a><a href="contact.html" data-page="contact">Contact</a></nav>
+    <div class="actions">
+      <a class="icon-btn" href="cart.html" aria-label="Cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.2l2 11h10.2l2-8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span class="cart-count" hidden>0</span></a>
+      <a class="account-link" id="account-link" href="signin.html">Sign in</a>
+      <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<div class="page-head no-print"><div class="wrap"><h1>Your invoice</h1><p id="inv-sub">Loading your invoice...</p></div></div>
+<div class="section"><div class="wrap inv-wrap">
+  <div id="inv-msg" class="empty" hidden></div>
+  <article class="invoice inv-doc" id="inv" hidden></article>
+  <aside class="panel inv-pay no-print" id="pay-box" hidden>
+    <h3 style="margin-top:0">Pay this invoice</h3>
+    <p class="muted" style="margin-top:0">Pay securely with Paynow. We never see your PIN or card details.</p>
+    <form id="pay-form" novalidate>
+      <div class="field"><label for="p-method">How do you want to pay?</label><select id="p-method"><option value="ecocash">EcoCash (PIN prompt on your phone)</option><option value="redirect">InnBucks, Zimswitch, bank and others</option></select></div>
+      <div class="field"><label for="p-phone" id="p-phone-label">EcoCash number</label><input id="p-phone" type="tel" maxlength="16" placeholder="0771234567"></div>
+      <p id="test-note" hidden style="font-size:.85rem;color:var(--danger);margin:0 0 1rem">Test mode, no real money moves. EcoCash test numbers: 0771111111 (success), 0773333333 (cancelled).</p>
+      <button class="btn btn-block btn-pay" type="submit" id="pay-btn">Pay now</button>
+      <div id="msg" class="msg" role="alert"></div>
+    </form>
+  </aside>
+</div>
+<div class="wrap inv-actions no-print" id="inv-actions" hidden>
+  <button class="btn btn-line btn-sm" type="button" id="inv-print">Print or save as PDF</button>
+  <a class="btn btn-line btn-sm" id="inv-wa" target="_blank" rel="noopener" href="https://wa.me/263775610805">Ask us on WhatsApp</a>
+  <a class="btn btn-line btn-sm" href="account.html">All my orders</a>
+</div></div>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="index.html"><img src="assets/logo-mark-light.png" alt="" width="34" height="37"><span class="brand-word">KINTON</span></a>
+        <p>Building ideas. Creating solutions.</p>
+      </div>
+      <div><h4>Explore</h4><ul><li><a href="shop.html">Shop</a></li><li><a href="services.html">Services</a></li><li><a href="labs.html">Labs</a></li><li><a href="about.html">About us</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><h4>Your account</h4><ul><li><a href="signin.html">Sign in</a></li><li><a href="signup.html">Create account</a></li><li><a href="cart.html">Cart</a></li></ul></div>
+      <div><h4>Find us</h4><ul><li>Kadoma, Zimbabwe</li><li><a href="https://wa.me/263775610805" target="_blank" rel="noopener">WhatsApp +263 77 561 0805</a></li></ul></div>
+    </div>
+    <div class="copy"><span>&copy; <span class="year">2026</span> Kinton Technologies. All rights reserved.</span><span><a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a></span></div>
+  </div>
+</footer>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var cfg = window.KINTON_CONFIG || {};
+  var API = 'https://kinton-pay.onrender.com'; // change this if Render gave your service a different address
+  var cur = cfg.currencySymbol || '$';
+  var $ = function (id) { return document.getElementById(id); };
+  var id = new URLSearchParams(location.search).get('id') || '';
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(n) { return cur + Number(n || 0).toFixed(2); }
+  function ms(v) { return v && v.toMillis ? v.toMillis() : (v && v.seconds ? v.seconds * 1000 : v); }
+  function day(v) { v = ms(v); return v ? new Date(v).toLocaleDateString('en-GB', { dateStyle: 'long' }) : ''; }
+  function fail(text, signin) {
+    $('inv-sub').textContent = '';
+    var m = $('inv-msg'); m.hidden = false;
+    m.innerHTML = '<h3>' + esc(text) + '</h3>' + (signin ? '<a class="btn" href="signin.html?next=' + encodeURIComponent('invoice.html?id=' + id) + '">Sign in</a>' : '<a class="btn" href="account.html">My orders</a>');
+  }
+
+  function render(o) {
+    var lines = (o.items || []).map(function (i) { var q = Number(i.qty) || 1, p = Number(i.price) || 0; return { name: i.name, qty: q, price: p, amt: q * p }; });
+    var sum = lines.reduce(function (t, l) { return t + l.amt; }, 0);
+    var total = Number(o.total) > 0 ? Number(o.total) : sum;
+    var quote = !(total > 0);
+    var paid = !!o.paid;
+    var no = 'INV-' + esc(String(o.ref || '').replace(/^KT-/, ''));
+
+    $('inv-sub').textContent = 'Invoice ' + no + (paid ? ' - paid, thank you.' : '');
+    $('inv').hidden = false;
+    $('inv').innerHTML =
+      (paid ? '<div class="inv-stamp">PAID</div>' : '') +
+      '<div class="inv-head"><div><a class="brand" href="index.html"><img src="assets/logo-mark.png" alt="" width="34" height="37"><span class="brand-word">KINTON</span></a>' +
+      '<div class="inv-co">Kinton Technologies<br>Kadoma, Zimbabwe<br>' + esc(cfg.whatsappDisplay || '') + '</div></div>' +
+      '<div class="inv-dates"><h2 class="inv-title">INVOICE</h2><div class="inv-no">' + no + '</div></div></div>' +
+      '<div class="inv-meta"><div class="inv-block"><span class="inv-k">Billed to</span><strong>' + esc(o.userName) + '</strong><br>' + esc(o.userEmail) + '<br>' + esc(o.phone) + '</div>' +
+      '<div class="inv-dates"><span class="inv-k">Issued</span>' + esc(day(o.createdAt)) +
+      '<span class="inv-k" style="margin-top:.7rem">Status</span><span class="badge ' + (paid ? 'paid' : 'pending') + '">' + (paid ? 'Paid' + (o.paidAt ? ' on ' + esc(day(o.paidAt)) : '') : (quote ? 'Quote to follow' : 'Awaiting payment')) + '</span></div></div>' +
+      '<div style="overflow-x:auto"><table class="inv-table"><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>' +
+      lines.map(function (l) { return '<tr><td>' + esc(l.name) + '</td><td>' + l.qty + '</td><td>' + (l.price > 0 ? money(l.price) : 'Quote') + '</td><td>' + (l.price > 0 ? money(l.amt) : '-') + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' +
+      '<div class="inv-sum"><div class="due"><span>' + (paid ? 'Total paid' : 'Total due') + '</span><strong>' + (quote ? 'To be quoted' : money(paid && o.paidAmount ? o.paidAmount : total)) + '</strong></div></div>' +
+      (o.note ? '<p class="muted"><strong>Your note:</strong> ' + esc(o.note) + '</p>' : '') +
+      '<div class="inv-foot">Thank you for choosing Kinton Technologies. Building ideas. Creating solutions.<br>Questions about this invoice? Message us on WhatsApp ' + esc(cfg.whatsappDisplay || '') + '.</div>';
+    $('inv-actions').hidden = false;
+    $('inv-wa').href = 'https://wa.me/' + (cfg.whatsappNumber || '263775610805') + '?text=' + encodeURIComponent('Hi Kinton, I have a question about invoice ' + no);
+    $('inv-print').onclick = function () { window.print(); };
+    if (!paid && !quote) setupPay(o);
+  }
+
+  function setupPay(o) {
+    $('pay-box').hidden = false;
+    $('p-phone').value = o.phone || '';
+    var sel = $('p-method'), label = $('p-phone-label'), btn = $('pay-btn'), msg = $('msg');
+    sel.addEventListener('change', function () { label.textContent = sel.value === 'ecocash' ? 'EcoCash number' : 'Phone number'; });
+    fetch(API + '/health').then(function (r) { return r.json(); }).then(function (j) { if (j.mode === 'test') $('test-note').hidden = false; }).catch(function () {});
+    $('pay-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      msg.textContent = '';
+      var phone = $('p-phone').value.trim();
+      if (phone.replace(/\D/g, '').length < 9) { msg.textContent = 'Please enter a valid phone number.'; return; }
+      btn.disabled = true; btn.textContent = 'Connecting to Paynow...';
+      var slow = setTimeout(function () { msg.textContent = 'Starting the secure payment server, this can take up to a minute...'; }, 6000);
+      fetch(API + '/createPayment', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: o.id, method: sel.value, phone: phone, name: o.userName, email: o.userEmail || (Store.user && Store.user.email) || '' })
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (r) {
+          if (!r.ok || !(r.j.redirectUrl || r.j.mobile)) throw new Error(r.j.error || 'Could not start the payment.');
+          clearTimeout(slow);
+          window.location.href = r.j.mobile ? 'payment-result.html?ref=' + encodeURIComponent(r.j.ref) : r.j.redirectUrl;
+        })
+        .catch(function (err) { clearTimeout(slow); msg.textContent = err.message || 'Could not start the payment.'; btn.disabled = false; btn.textContent = 'Pay now'; });
+    });
+  }
+
+  if (!id) return fail('No invoice selected.');
+  Store.ready.then(function () {
+    if (!Store.user) return fail('Sign in to see your invoice.', true);
+    return Store.listMyOrders().then(function (os) {
+      var o = os.filter(function (x) { return x.id === id; })[0];
+      if (!o) return fail('We could not find that invoice on your account.');
+      render(o);
+    });
+  }).catch(function () { fail('We could not load your invoice. Please reload.'); });
+});
+</script>
+</body>
+</html>

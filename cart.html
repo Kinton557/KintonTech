@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-6DCN44LECE"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-6DCN44LECE');</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X02H5XM8KT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-X02H5XM8KT');
+</script>
 <meta charset="UTF-8">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
@@ -28,6 +35,8 @@
 <script src="config.js" defer></script>
 <script src="store.js" defer></script>
 <script src="app.js" defer></script>
+<script src="track.js" defer></script>
+<script src="motion.js" defer></script>
 <script src="guide.js" defer></script>
 </head>
 <body data-page="cart">
@@ -59,8 +68,8 @@
   <div id="cart-done" class="done" hidden>
     <h2>Order received. Thank you!</h2>
     <div class="ref" id="done-ref"></div>
-    <p class="muted" style="max-width:30rem;margin-inline:auto">We will contact you on WhatsApp to confirm everything. To speed things up, send us your order number now.</p>
-    <div class="cta-row" style="justify-content:center"><a class="btn" id="done-wa" target="_blank" rel="noopener" href="https://wa.me/263775610805">Message us on WhatsApp</a><a class="btn btn-line" href="account.html">View my orders</a></div>
+    <p class="muted" style="max-width:30rem;margin-inline:auto">Your invoice is ready. Pay it online now with EcoCash or another method, or message us on WhatsApp and we will confirm everything with you.</p>
+    <div class="cta-row" style="justify-content:center"><a class="btn" id="done-inv" href="account.html">View invoice &amp; pay</a><a class="btn btn-line" id="done-wa" target="_blank" rel="noopener" href="https://wa.me/263775610805">Message us on WhatsApp</a><a class="btn btn-line" href="account.html">View my orders</a></div>
   </div>
 </div>
 </main>

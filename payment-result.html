@@ -61,7 +61,8 @@
     <p id="detail">We are confirming your payment directly with Paynow.</p>
     <p style="font-size:.85rem;color:var(--muted)">Reference: <strong id="ref">-</strong></p>
     <a class="btn btn-line" id="again" href="pay.html" hidden>Try again</a>
-    <a class="btn" id="home" href="index.html" hidden>Back to home</a>
+    <a class="btn" id="inv-link" href="account.html" hidden>View invoice</a>
+    <a class="btn btn-line" id="home" href="index.html" hidden>Back to home</a>
   </div>
 </div></div>
 </main>
@@ -102,7 +103,10 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(function (j) {
         if (j.error) return show('We could not find that payment', j.error, true, true);
         var s = String(j.status || '').toLowerCase();
-        if (j.paid) return show('Payment received', 'Thank you. $' + Number(j.amount).toFixed(2) + ' was paid.', true, false);
+        if (j.paid) {
+          if (j.orderId) { $('inv-link').href = 'invoice.html?id=' + encodeURIComponent(j.orderId); $('inv-link').hidden = false; }
+          return show('Payment received', 'Thank you. $' + Number(j.amount).toFixed(2) + ' was paid.', true, false);
+        }
         if (/cancel|fail|declin|disputed|refund|mismatch/.test(s)) return show('Payment not completed', 'Status: ' + j.status + '. You have not been charged for this attempt.', true, true);
         // still waiting (mobile money can take a moment): ask again for up to about two minutes
         if (tries < 24) { show('Waiting for payment', 'Status: ' + j.status + '. If EcoCash asked for your PIN, please enter it on your phone.', false, false); return setTimeout(check, 5000); }
