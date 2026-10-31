@@ -1,0 +1,14 @@
+{
+  "name": "Kinton Technologies",
+  "short_name": "Kinton",
+  "description": "Websites, apps and brands for Zimbabwean businesses.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#151515",
+  "theme_color": "#151515",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

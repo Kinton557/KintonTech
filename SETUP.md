@@ -55,3 +55,9 @@ It makes Firebase itself refuse requests that do not come from your real site. A
 - "Suspend" blocks a person from signing in on the site and from ordering or opening tickets. It does not delete their Firebase login.
 - `terms.html` and `privacy.html` are plain-language starting drafts. Have a lawyer check them as the business grows.
 - Updating the site: edit the `.html` files directly in GitHub. Header and footer are repeated in each page.
+
+## Visitor analytics (Dashboard > Analytics)
+1. Publish the latest `firestore.rules` (it adds the `hits` and `live` collections).
+2. Upload all website files, including the new `track.js`, `motion.js`, `modern.css`, `admin-stats.js`, `manifest.webmanifest` and `sw.js`.
+3. Open Dashboard > Analytics. Owners and admins see it automatically. For staff, tick **Analytics** in Staff & users.
+Visits are anonymous (no names, emails, IP addresses or cookies). Staff visits are never counted.

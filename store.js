@@ -32,7 +32,7 @@
   Store.orderStatuses = ['new', 'confirmed', 'in progress', 'completed', 'cancelled'];
   // Admin modules. "perms" for staff are these keys. Owners and admins can open everything.
   Store.MODULES = [
-    ['products', 'Products'], ['orders', 'Orders'], ['payments', 'Invoices & payments'], ['projects', 'Client projects'],
+    ['products', 'Products'], ['orders', 'Orders'], ['payments', 'Invoices & payments'], ['analytics', 'Analytics'], ['projects', 'Client projects'],
     ['labs', 'KintonTech Labs'], ['tickets', 'Support'], ['content', 'Website content']
   ];
   Store.sampleProducts = [
@@ -156,6 +156,11 @@
     updateStaff: function (uid, patch) { mapUser(uid, function (u) { if (u.role === 'owner') return u; return Object.assign({}, u, { role: patch.role || u.role, perms: patch.perms || u.perms }); }); return Promise.resolve(); },
     setSuspended: function (kind, uid, v) { mapUser(uid, function (u) { return u.role === 'owner' ? u : Object.assign({}, u, { suspended: !!v }); }); return Promise.resolve(); },
     removeStaff: function (uid) { mapUser(uid, function (u) { return u.role === 'owner' ? u : Object.assign({}, u, { role: 'customer', perms: [] }); }); return Promise.resolve(); },
+    // analytics (demo mode keeps it in this browser only)
+    logHit: function (h) { var a = D.get('hits', []); h = Object.assign({ id: 'h' + uid8(), t: Date.now() }, h); a.push(h); if (a.length > 3000) a = a.slice(-3000); D.set('hits', a); return Promise.resolve(); },
+    beat: function (vid, b) { var m = D.get('live', {}); m[vid] = Object.assign({}, b, { t: Date.now() }); D.set('live', m); return Promise.resolve(); },
+    listHits: function (since) { return Promise.resolve(D.get('hits', []).filter(function (h) { return h.t >= since; })); },
+    listLive: function (since) { var m = D.get('live', {}); return Promise.resolve(Object.keys(m).map(function (k) { return Object.assign({ id: k }, m[k]); }).filter(function (x) { return x.t >= since; })); },
     ping: function () { var t = Date.now(); D.get('products'); return Promise.resolve(Date.now() - t); }
   };
 
@@ -290,6 +295,17 @@
     updateStaff: function (uid, patch) { var d = {}; if (patch.role) d.role = patch.role; if (patch.perms) d.perms = patch.perms; return wrap(db.collection('admins').doc(uid).update(d)); },
     setSuspended: function (kind, uid, v) { return wrap(db.collection(kind === 'staff' ? 'admins' : 'users').doc(uid).update({ suspended: !!v })); },
     removeStaff: function (uid) { return wrap(db.collection('admins').doc(uid).delete()); },
+    // analytics: visitors write anonymous hits; only staff with the Analytics permission can read them
+    logHit: function (h) { return db.collection('hits').add(Object.assign({}, h, { t: ts() })).catch(function () {}); },
+    beat: function (vid, b) { return db.collection('live').doc(vid).set(Object.assign({}, b, { t: ts() })).catch(function () {}); },
+    listHits: function (since) {
+      return wrap(db.collection('hits').where('t', '>=', firebase.firestore.Timestamp.fromMillis(since)).orderBy('t', 'desc').limit(8000).get()
+        .then(function (s) { return s.docs.map(function (d) { var x = d.data(); x.id = d.id; x.t = ms(x.t); return x; }); }));
+    },
+    listLive: function (since) {
+      return wrap(db.collection('live').where('t', '>=', firebase.firestore.Timestamp.fromMillis(since)).get()
+        .then(function (s) { return s.docs.map(function (d) { var x = d.data(); x.id = d.id; x.t = ms(x.t); return x; }); }));
+    },
     ping: function () { var t = Date.now(); return db.collection('content').doc('site').get().then(function () { return Date.now() - t; }); }
   };
 

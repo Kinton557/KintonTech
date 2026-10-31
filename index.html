@@ -4,6 +4,9 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6DCN44LECE"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-6DCN44LECE');</script>
 <meta charset="UTF-8">
+<script>try{var t=localStorage.getItem("kt_theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="manifest" href="/manifest.webmanifest">
+
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
@@ -25,11 +28,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="modern.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Kinton Technologies","url":"https://kintontechnologies.co.zw","logo":"https://kintontechnologies.co.zw/assets/icon-192.png","slogan":"Building ideas. Creating solutions.","address":{"@type":"PostalAddress","addressLocality":"Kadoma","addressCountry":"ZW"},"founder":{"@type":"Person","name":"Tanaka Shanon Mujikijera"},"telephone":"+263775610805"}</script>
 <script src="config.js" defer></script>
 <script src="store.js" defer></script>
 <script src="app.js" defer></script>
+<script src="track.js" defer></script>
+<script src="motion.js" defer></script>
 <script src="guide.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ProfessionalService","name":"Kinton Technologies","url":"https://kintontechnologies.co.zw","logo":"https://kintontechnologies.co.zw/assets/icon-192.png","telephone":"+263775610805","slogan":"Building ideas. Creating solutions.","address":{"@type":"PostalAddress","addressLocality":"Kadoma","addressCountry":"ZW"},"areaServed":"ZW","sameAs":[]}</script>
 </head>
 <body data-page="home">
 <a class="skip" href="#main">Skip to content</a>
@@ -66,6 +73,17 @@
   </div>
 </section>
 
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="trust">
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><h3>Price agreed first</h3><p>Scope, price and timeline are settled before any work starts.</p></div></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><div><h3>Pay the way you already do</h3><p>EcoCash, InnBucks, Zimswitch or bank, through Paynow. We never see your PIN.</p></div></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><div><h3>Works on every phone</h3><p>Sites are built mobile-first, so they load and read well on small screens.</p></div></div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.3A8.4 8.4 0 1 1 21 11.5z"/></svg><div><h3>Talk to a real person</h3><p>Message us on WhatsApp from any page and we will reply.</p></div></div>
+    </div>
+  </div>
+</section>
+
 <section class="section tint">
   <div class="wrap">
     <div class="section-head"><h2>From the shop</h2><a class="btn btn-line btn-sm" href="shop.html">View everything</a></div>
@@ -81,6 +99,18 @@
       <li><h3>Confirm</h3><p>Place your order. We contact you on WhatsApp to agree scope, price and timeline. You pay nothing at this step.</p></li>
       <li><h3>Build and launch</h3><p>We build, you review and ask for changes, then we launch it together.</p></li>
     </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Questions people ask</h2>
+    <div class="faq">
+      <details class="faq-item"><summary>Do I pay when I place an order?</summary><div class="faq-a"><p>No. Placing an order pays nothing. We contact you to agree scope, price and timeline, then your invoice appears in your account with a Pay now button.</p></div></details>
+      <details class="faq-item"><summary>How can I pay?</summary><div class="faq-a"><p>Through Paynow: EcoCash (a PIN prompt appears on your phone), InnBucks, Zimswitch and bank payments. Paynow handles your PIN and card details, so we never see them.</p></div></details>
+      <details class="faq-item"><summary>Can you build something that is not in the shop?</summary><div class="faq-a"><p>Yes. Send us a message or use the quote request. Apps and other custom work are scoped with you first, then we send a fixed quote.</p></div></details>
+      <details class="faq-item"><summary>How do I get help after I order?</summary><div class="faq-a"><p>Message us on WhatsApp, or open a support ticket from your account. Every invoice also has an Ask us on WhatsApp button.</p></div></details>
+    </div>
   </div>
 </section>
 
