@@ -140,43 +140,89 @@
       };
       if (pending) { var p = pending; pending = null; invForm(null, p); }
     }
-    function nextNumber() { var y = new Date().getFullYear(), n = inv.filter(function (i) { return String(i.number).indexOf('INV-' + y) === 0; }).length + 1; return 'INV-' + y + '-' + String(n).padStart(3, '0'); }
+    function nextNumber() { var y = new Date().getFullYear(), n = inv.reduce(function (m, i) { var p = String(i.number || '').match(/^INV-(\d{4})-(\d+)$/); return p && +p[1] === y ? Math.max(m, +p[2]) : m; }, 0) + 1; return 'INV-' + y + '-' + String(n).padStart(3, '0'); }
+    function calc(items, dPct, vPct) {
+      var r = function (n) { return Math.round(n * 100) / 100; };
+      var sub = items.reduce(function (t, l) { return t + num(l.qty) * num(l.price); }, 0);
+      var disc = sub * Math.min(100, num(dPct)) / 100, vat = (sub - disc) * Math.min(100, num(vPct)) / 100;
+      return { sub: r(sub), disc: r(disc), vat: r(vat), total: r(sub - disc + vat) };
+    }
+    var PAY_DEFAULT = 'Pay by EcoCash, InnBucks, Zimswitch or bank transfer. Please quote the invoice number as your payment reference.';
+    function doc(i, paid) {
+      var cfg = window.KINTON_CONFIG || {}, c = calc(i.items || [], i.discount, i.vat), bal = Math.max(0, c.total - paid);
+      var late = i.due && i.due < today() && ['paid', 'void'].indexOf(i.status) < 0;
+      var stamp = i.status === 'paid' ? 'PAID' : i.status === 'void' ? 'VOID' : late ? 'OVERDUE' : '';
+      var rows = (i.items || []).map(function (l, n) { return '<tr><td>' + (n + 1) + '</td><td>' + E(l.desc) + '</td><td>' + E(l.qty) + '</td><td>' + KT.usd(l.price) + '</td><td>' + KT.usd(num(l.qty) * num(l.price)) + '</td></tr>'; }).join('');
+      return '<article class="invoice inv-doc" style="position:relative">' + (stamp ? '<div class="inv-stamp">' + stamp + '</div>' : '') +
+        '<header class="inv-head"><div><div class="brand"><img src="assets/logo-mark.png" alt="" width="40" height="44"><span class="brand-word">KINTON</span></div>' +
+        '<div class="inv-co">Kinton Technologies<br>Kadoma, Zimbabwe<br>WhatsApp ' + E(cfg.whatsappDisplay || '') + '</div></div>' +
+        '<div class="inv-dates"><h2 class="inv-title">INVOICE</h2><div class="inv-no">' + E(i.number || 'Draft') + '</div></div></header>' +
+        '<div class="inv-meta"><div class="inv-block"><span class="inv-k">Billed to</span><strong>' + E(i.client || 'Client name') + '</strong>' +
+        (i.address ? '<br>' + E(i.address) : '') + (i.phone ? '<br>' + E(i.phone) : '') + (i.email ? '<br>' + E(i.email) : '') + (i.tin ? '<br>TIN ' + E(i.tin) : '') + '</div>' +
+        '<div class="inv-dates"><span class="inv-k">Issued</span>' + E(i.issued || today()) + (i.due ? '<br><span class="inv-k">Due</span>' + E(i.due) : '') +
+        '<br><span class="inv-k" style="margin-top:.6rem">Status</span>' + KT.badge(late && i.status !== 'paid' ? 'Overdue' : i.status, late ? 'cancelled' : undefined) + (i.orderRef ? '<br><span class="inv-k">Order</span>' + E(i.orderRef) : '') + '</div></div>' +
+        '<div class="table-wrap"><table class="inv-table"><thead><tr><th>No.</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="inv-sum"><div><span>Subtotal</span><span>' + KT.usd(c.sub) + '</span></div>' +
+        (c.disc ? '<div><span>Discount (' + num(i.discount) + '%)</span><span>-' + KT.usd(c.disc) + '</span></div>' : '') +
+        (c.vat ? '<div><span>VAT (' + num(i.vat) + '%)</span><span>' + KT.usd(c.vat) + '</span></div>' : '') +
+        '<div><strong>Total</strong><strong>' + KT.usd(c.total) + '</strong></div>' +
+        (paid ? '<div><span>Paid</span><span>-' + KT.usd(paid) + '</span></div>' : '') +
+        '<div class="due"><span>Balance due</span><strong>' + KT.usd(bal) + '</strong></div></div>' +
+        '<p class="inv-note"><strong>How to pay</strong><br>' + E(i.payinfo || PAY_DEFAULT) + '</p>' +
+        (i.notes ? '<p class="inv-note" style="white-space:pre-wrap">' + E(i.notes) + '</p>' : '') +
+        '<footer class="inv-foot">Thank you for choosing Kinton Technologies. Building ideas. Creating solutions.</footer></article>';
+    }
     function invForm(i, pre) {
-      i = i || Object.assign({ client: '', email: '', items: [{ desc: '', qty: 1, price: 0 }], status: 'draft', due: '', notes: '', orderRef: '', projectId: '' }, pre || {});
-      var box = $('#inv-form');
-      box.innerHTML = '<form class="panel" id="invf" style="margin-bottom:1.5rem" novalidate><h2 style="font-size:1.3rem">' + (i.id ? 'Edit ' + E(i.number) : 'New invoice') + '</h2><div class="form-grid">' +
-        '<div class="field"><label for="i-client">Client</label><input id="i-client" type="text" maxlength="100" value="' + E(i.client) + '" required></div><div class="field"><label for="i-email">Client email</label><input id="i-email" type="email" maxlength="120" value="' + E(i.email) + '"></div>' +
-        '<div class="field"><label for="i-due">Due date</label><input id="i-due" type="date" value="' + E(i.due) + '"></div><div class="field"><label for="i-status">Status</label><select id="i-status">' + ['draft', 'sent', 'partial', 'paid', 'void'].map(function (s) { return '<option' + (s === i.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
-        '<div class="field full"><span class="label">Items</span><div id="lines"></div><button type="button" class="link-btn" id="add-line">+ Add a line</button><p style="margin:.6rem 0 0;font-weight:800">Total: <span id="inv-total">$0</span></p></div>' +
-        '<div class="field full"><label for="i-notes">Notes (payment details, thanks...)</label><textarea id="i-notes" maxlength="500" style="min-height:5rem">' + E(i.notes) + '</textarea></div></div>' +
-        '<div class="cta-row"><button class="btn" type="submit">Save invoice</button><button class="btn btn-line" type="button" id="i-cancel">Cancel</button></div><div id="i-msg" class="msg" role="alert"></div></form>';
-      var lines = $('#lines');
-      function addLine(l) { var d = document.createElement('div'); d.className = 'inv-row'; d.innerHTML = '<input type="text" placeholder="Description" aria-label="Description" maxlength="120" value="' + E(l.desc) + '"><input type="number" min="1" max="999" step="1" aria-label="Quantity" value="' + E(l.qty) + '"><input type="number" min="0" step="0.01" aria-label="Unit price" value="' + E(l.price) + '"><button type="button" class="link-btn danger" aria-label="Remove line">&times;</button>'; lines.appendChild(d); }
-      function total() { var t = 0; Array.prototype.forEach.call(lines.children, function (r) { var f = r.querySelectorAll('input'); t += num(f[1].value) * num(f[2].value); }); $('#inv-total').textContent = KT.usd(t); return Math.round(t * 100) / 100; }
-      (i.items.length ? i.items : [{ desc: '', qty: 1, price: 0 }]).forEach(addLine); total();
-      lines.addEventListener('input', total); lines.addEventListener('click', function (e) { if (e.target.closest('.link-btn') && lines.children.length > 1) { e.target.closest('.inv-row').remove(); total(); } });
-      $('#add-line').addEventListener('click', function () { addLine({ desc: '', qty: 1, price: 0 }); });
+      i = i || Object.assign({ client: '', email: '', phone: '', address: '', tin: '', items: [{ desc: '', qty: 1, price: 0 }], status: 'draft', issued: today(), due: new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10), discount: 0, vat: 0, payinfo: PAY_DEFAULT, notes: 'Thank you for your business.', orderRef: '', projectId: '' }, pre || {});
+      var box = $('#inv-form'), fld = function (id, label, val, attrs) { return '<div class="field"><label for="i-' + id + '">' + label + '</label><input id="i-' + id + '" ' + (attrs || 'type="text"') + ' value="' + E(val == null ? '' : val) + '"></div>'; };
+      box.innerHTML = '<div class="inv-layout"><form class="panel" id="invf" novalidate><h2 style="font-size:1.3rem">' + (i.id ? 'Edit ' + E(i.number) : 'New invoice') + '</h2>' +
+        '<h3 class="inv-sec">Client</h3><div class="form-grid">' + fld('client', 'Client name', i.client, 'type="text" maxlength="100"') + fld('email', 'Email', i.email, 'type="email" maxlength="120"') + fld('phone', 'Phone / WhatsApp', i.phone, 'type="tel" maxlength="20"') + fld('tin', 'TIN / BP number (optional)', i.tin, 'type="text" maxlength="30"') +
+        '<div class="field full"><label for="i-address">Address</label><input id="i-address" type="text" maxlength="160" value="' + E(i.address || '') + '"></div></div>' +
+        '<h3 class="inv-sec">Dates and status</h3><div class="form-grid">' + fld('issued', 'Issue date', i.issued || today(), 'type="date"') + fld('due', 'Due date', i.due, 'type="date"') +
+        '<div class="field"><label for="i-status">Status</label><select id="i-status">' + ['draft', 'sent', 'partial', 'paid', 'void'].map(function (s) { return '<option' + (s === i.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div></div>' +
+        '<h3 class="inv-sec">Items</h3><div id="lines"></div><button type="button" class="link-btn" id="add-line">+ Add a line</button>' +
+        '<div class="form-grid" style="margin-top:1rem">' + fld('disc', 'Discount %', i.discount || 0, 'type="number" min="0" max="100" step="0.5"') + fld('vat', 'VAT % (0 if not registered)', i.vat || 0, 'type="number" min="0" max="100" step="0.5"') + '</div>' +
+        '<div class="inv-calc" id="calc"></div>' +
+        '<h3 class="inv-sec">Payment and notes</h3><div class="field"><label for="i-payinfo">How to pay</label><textarea id="i-payinfo" maxlength="300" style="min-height:4rem">' + E(i.payinfo || PAY_DEFAULT) + '</textarea></div>' +
+        '<div class="field"><label for="i-notes">Notes</label><textarea id="i-notes" maxlength="500" style="min-height:4rem">' + E(i.notes) + '</textarea></div>' +
+        '<div class="cta-row"><button class="btn" type="submit">Save invoice</button><button class="btn btn-line" type="button" id="i-cancel">Cancel</button></div><div id="i-msg" class="msg" role="alert"></div></form>' +
+        '<aside class="inv-preview" aria-label="Live preview"></aside></div>';
+      var lines = $('#lines'), form = $('#invf');
+      function addLine(l) { var d = document.createElement('div'); d.className = 'inv-row inv-row-x'; d.innerHTML = '<input type="text" placeholder="Description" aria-label="Description" maxlength="120" value="' + E(l.desc) + '"><input type="number" min="1" max="999" step="1" aria-label="Quantity" value="' + E(l.qty) + '"><input type="number" min="0" step="0.01" aria-label="Unit price" value="' + E(l.price) + '"><span class="inv-amt"></span><button type="button" class="link-btn danger" aria-label="Remove line">&times;</button>'; lines.appendChild(d); }
+      function read() {
+        var v = function (id) { return $('#i-' + id).value.trim(); };
+        var items = Array.prototype.map.call(lines.children, function (r) { var f = r.querySelectorAll('input'); return { desc: f[0].value.trim().slice(0, 120), qty: Math.max(1, Math.round(num(f[1].value))), price: Math.max(0, Math.round(num(f[2].value) * 100) / 100) }; });
+        return Object.assign({}, i, { client: v('client').slice(0, 100), email: v('email'), phone: v('phone'), tin: v('tin'), address: v('address'), issued: v('issued') || today(), due: v('due'), status: $('#i-status').value, items: items, discount: Math.min(100, Math.max(0, num(v('disc')))), vat: Math.min(100, Math.max(0, num(v('vat')))), payinfo: v('payinfo').slice(0, 300), notes: v('notes').slice(0, 500) });
+      }
+      function refresh() {
+        var d = read(), c = calc(d.items, d.discount, d.vat);
+        Array.prototype.forEach.call(lines.children, function (r, n) { r.querySelector('.inv-amt').textContent = KT.usd(d.items[n].qty * d.items[n].price); });
+        $('#calc').innerHTML = '<div><span>Subtotal</span><span>' + KT.usd(c.sub) + '</span></div>' + (c.disc ? '<div><span>Discount</span><span>-' + KT.usd(c.disc) + '</span></div>' : '') + (c.vat ? '<div><span>VAT</span><span>' + KT.usd(c.vat) + '</span></div>' : '') + '<div class="inv-total"><strong>Total</strong><strong>' + KT.usd(c.total) + '</strong></div>';
+        d.items = d.items.filter(function (x) { return x.desc; });
+        $('.inv-preview').innerHTML = doc(d, i.id ? paidFor(i.id) : 0);
+      }
+      (i.items.length ? i.items : [{ desc: '', qty: 1, price: 0 }]).forEach(addLine); refresh();
+      form.addEventListener('input', refresh);
+      lines.addEventListener('click', function (e) { if (e.target.closest('.link-btn') && lines.children.length > 1) { e.target.closest('.inv-row').remove(); refresh(); } });
+      $('#add-line').addEventListener('click', function () { addLine({ desc: '', qty: 1, price: 0 }); refresh(); });
       $('#i-cancel').addEventListener('click', function () { box.innerHTML = ''; });
-      $('#invf').addEventListener('submit', function (e) {
-        e.preventDefault(); var msg = $('#i-msg'), client = $('#i-client').value.trim(), email = $('#i-email').value.trim();
-        if (client.length < 2) return say(msg, 'Enter the client name.');
-        if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say(msg, 'That email does not look right.');
-        var items = Array.prototype.map.call(lines.children, function (r) { var f = r.querySelectorAll('input'); return { desc: f[0].value.trim().slice(0, 120), qty: Math.max(1, Math.round(num(f[1].value))), price: Math.max(0, Math.round(num(f[2].value) * 100) / 100) }; }).filter(function (x) { return x.desc; });
-        if (!items.length) return say(msg, 'Add at least one item with a description.');
-        var t = total(), doc = { id: i.id, number: i.number || nextNumber(), client: client.slice(0, 100), email: email, items: items, total: t, status: $('#i-status').value, due: $('#i-due').value, notes: $('#i-notes').value.trim().slice(0, 500), orderRef: i.orderRef || '', projectId: i.projectId || '', issued: i.issued || today() };
+      form.addEventListener('submit', function (e) {
+        e.preventDefault(); var msg = $('#i-msg'), d = read();
+        if (d.client.length < 2) return say(msg, 'Enter the client name.');
+        if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) return say(msg, 'That email does not look right.');
+        d.items = d.items.filter(function (x) { return x.desc; });
+        if (!d.items.length) return say(msg, 'Add at least one item with a description.');
+        var c = calc(d.items, d.discount, d.vat);
+        var saved = Object.assign({}, d, { number: i.number || nextNumber(), total: c.total, subtotal: c.sub, discountAmt: c.disc, vatAmt: c.vat, orderRef: i.orderRef || '', projectId: i.projectId || '' });
         var btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
-        Store.col('invoices').save(doc).then(function () { Store.log((i.id ? 'Edited' : 'Created') + ' invoice ' + doc.number); KT.toast('Invoice saved'); load(); }).catch(function (err) { say(msg, err.message); btn.disabled = false; });
+        Store.col('invoices').save(saved).then(function () { Store.log((i.id ? 'Edited' : 'Created') + ' invoice ' + saved.number); KT.toast('Invoice saved'); load(); }).catch(function (err) { say(msg, err.message); btn.disabled = false; });
       });
       box.scrollIntoView({ block: 'start' });
     }
     function view(i) {
-      var paid = paidFor(i.id), bal = Math.max(0, num(i.total) - paid);
-      panel.innerHTML = '<div class="no-print cta-row" style="margin-bottom:1rem"><button class="btn" type="button" id="do-print">Print or save as PDF</button><button class="btn btn-line" type="button" id="back-inv">Back</button></div>' +
-        '<article class="invoice" id="invoice"><header class="inv-head"><div class="brand"><img src="assets/logo-mark.png" alt="" width="40" height="44"><span class="brand-word">KINTON</span></div><div style="text-align:right"><h2 style="margin:0">Invoice</h2><div>' + E(i.number) + '</div></div></header>' +
-        '<div class="inv-meta"><div><strong>Billed to</strong><br>' + E(i.client) + (i.email ? '<br>' + E(i.email) : '') + '</div><div style="text-align:right"><strong>Issued</strong> ' + E(i.issued || '') + (i.due ? '<br><strong>Due</strong> ' + E(i.due) : '') + '<br><strong>Status</strong> ' + E(i.status) + '</div></div>' +
-        '<div class="table-wrap"><table class="inv-table"><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>' + (i.items || []).map(function (l) { return '<tr><td>' + E(l.desc) + '</td><td>' + E(l.qty) + '</td><td>' + KT.usd(l.price) + '</td><td>' + KT.usd(l.qty * l.price) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-        '<div class="inv-sum"><div><span>Total</span><strong>' + KT.usd(i.total) + '</strong></div><div><span>Paid</span><span>' + KT.usd(paid) + '</span></div><div class="due"><span>Balance due</span><strong>' + KT.usd(bal) + '</strong></div></div>' +
-        (i.notes ? '<p style="white-space:pre-wrap">' + E(i.notes) + '</p>' : '') + '<footer class="inv-foot">Kinton Technologies &middot; Kadoma, Zimbabwe &middot; WhatsApp ' + E((window.KINTON_CONFIG || {}).whatsappDisplay || '') + '</footer></article>';
+      var paid = paidFor(i.id), c = calc(i.items || [], i.discount, i.vat), bal = Math.max(0, c.total - paid);
+      var wa = 'https://wa.me/' + String(i.phone || '').replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello ' + i.client + ', here is invoice ' + i.number + ' from Kinton Technologies. Amount due: ' + KT.usd(bal) + (i.due ? ', due ' + i.due : '') + '. Thank you!');
+      panel.innerHTML = '<div class="no-print cta-row" style="margin-bottom:1rem"><button class="btn" type="button" id="do-print">Print or save as PDF</button><a class="btn btn-line" target="_blank" rel="noopener" href="' + E(wa) + '">Send on WhatsApp</a><button class="btn btn-line" type="button" id="back-inv">Back</button></div>' + doc(i, paid);
       $('#do-print').addEventListener('click', function () { window.print(); }); $('#back-inv').addEventListener('click', function () { load(); });
     }
 
