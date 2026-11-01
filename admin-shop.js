@@ -5,6 +5,39 @@
   function today() { return new Date().toISOString().slice(0, 10); }
   function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
 
+  /* Invoice look: dark gold header, soft cards, gold total. Scoped to .inv-doc so nothing else changes. */
+  (function () {
+    if (document.getElementById('kt-inv-css')) return;
+    var s = document.createElement('style'); s.id = 'kt-inv-css';
+    s.textContent = [
+      '.invoice.inv-doc{background:#fff;color:#1b1b1b;border:0;border-radius:18px;overflow:hidden;box-shadow:0 22px 60px rgba(0,0,0,.2);padding:0 0 1.2rem}',
+      '.inv-doc>*:not(.inv-head):not(.inv-stamp){margin-left:clamp(1rem,4vw,2rem);margin-right:clamp(1rem,4vw,2rem)}',
+      '.inv-doc .inv-head{position:relative;overflow:hidden;background:linear-gradient(135deg,#0d0d0d 0%,#25200f 62%,#4a3a12 100%);color:#fff;border:0;border-bottom:4px solid #d4a72c;margin:0 0 1.4rem;padding:1.5rem clamp(1rem,4vw,2rem)}',
+      '.inv-doc .inv-head::after{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(226,185,85,.38),transparent 70%);pointer-events:none}',
+      '.inv-doc .brand-word{color:#fff;letter-spacing:.3em}.inv-doc .inv-co{color:#c9c2ae}',
+      '.inv-doc .inv-title{font-size:clamp(1.8rem,8vw,2.9rem);font-weight:800;letter-spacing:.2em;background:linear-gradient(90deg,#fff,#e2b955);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}',
+      '.inv-doc .inv-no{color:#e2b955;font-weight:700;letter-spacing:.08em}',
+      '.inv-doc .inv-meta{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}',
+      '.inv-doc .inv-block,.inv-doc .inv-meta .inv-dates{background:#faf6ea;border-left:4px solid #d4a72c;border-radius:10px;padding:.8rem 1rem;text-align:left}',
+      '.inv-doc .inv-k{color:#8a6d12}',
+      '.inv-doc .inv-table{border-collapse:separate;border-spacing:0;border-radius:10px;overflow:hidden}',
+      '.inv-doc .inv-table thead th{background:linear-gradient(90deg,#151515,#2e2610);color:#e2b955;border:0;border-radius:0;padding:.7rem .6rem}',
+      '.inv-doc .inv-table tbody td{padding:.7rem .6rem;border-bottom:1px solid #eee6cf}',
+      '.inv-doc .inv-table tbody tr:nth-child(even) td{background:#fbf8ef}',
+      '.inv-doc .inv-sum{max-width:20rem;margin-left:auto}',
+      '.inv-doc .inv-sum .due{background:linear-gradient(135deg,#f3d577,#d4a72c);color:#151515;border:0;border-radius:12px;padding:.85rem 1rem;font-size:1.15rem;box-shadow:0 8px 20px rgba(212,167,44,.35)}',
+      '.inv-doc .inv-note{background:#f5f5f3;border-left:4px solid #151515;border-radius:10px;padding:.8rem 1rem}',
+      '.inv-doc .inv-foot{background:#151515;color:#d8d0b8;text-align:center;border:0;border-radius:10px;padding:.9rem}',
+      '.inv-doc .inv-stamp{border-width:4px;opacity:.85;color:#1a7f4b;border-color:#1a7f4b;background:rgba(255,255,255,.6)}',
+      '.inv-doc .inv-stamp.s-overdue{color:#c0392b;border-color:#c0392b}.inv-doc .inv-stamp.s-void{color:#777;border-color:#777}',
+      '@media print{.invoice.inv-doc{box-shadow:none;border-radius:0}.inv-doc,.inv-doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+      '.inv-doc .inv-table thead th{background:#151515!important;color:#e2b955!important;border:0!important}',
+      '.inv-doc .inv-table tbody tr:nth-child(even) td{background:#fbf8ef!important}',
+      '.inv-doc .inv-sum .due{background:linear-gradient(135deg,#f3d577,#d4a72c)!important;color:#151515!important;border:0!important;border-radius:12px!important;padding:.85rem 1rem!important}}'
+    ].join('');
+    document.head.appendChild(s);
+  })();
+
   /* ---------------- Products ---------------- */
   function resizeImage(file) {
     return new Promise(function (res, rej) {
@@ -153,8 +186,8 @@
       var late = i.due && i.due < today() && ['paid', 'void'].indexOf(i.status) < 0;
       var stamp = i.status === 'paid' ? 'PAID' : i.status === 'void' ? 'VOID' : late ? 'OVERDUE' : '';
       var rows = (i.items || []).map(function (l, n) { return '<tr><td>' + (n + 1) + '</td><td>' + E(l.desc) + '</td><td>' + E(l.qty) + '</td><td>' + KT.usd(l.price) + '</td><td>' + KT.usd(num(l.qty) * num(l.price)) + '</td></tr>'; }).join('');
-      return '<article class="invoice inv-doc" style="position:relative">' + (stamp ? '<div class="inv-stamp">' + stamp + '</div>' : '') +
-        '<header class="inv-head"><div><div class="brand"><img src="assets/logo-mark.png" alt="" width="40" height="44"><span class="brand-word">KINTON</span></div>' +
+      return '<article class="invoice inv-doc" style="position:relative">' + (stamp ? '<div class="inv-stamp s-' + stamp.toLowerCase() + '">' + stamp + '</div>' : '') +
+        '<header class="inv-head"><div><div class="brand"><img src="assets/logo-mark-light.png" alt="" width="40" height="44"><span class="brand-word">KINTON</span></div>' +
         '<div class="inv-co">Kinton Technologies<br>Kadoma, Zimbabwe<br>WhatsApp ' + E(cfg.whatsappDisplay || '') + '</div></div>' +
         '<div class="inv-dates"><h2 class="inv-title">INVOICE</h2><div class="inv-no">' + E(i.number || 'Draft') + '</div></div></header>' +
         '<div class="inv-meta"><div class="inv-block"><span class="inv-k">Billed to</span><strong>' + E(i.client || 'Client name') + '</strong>' +
