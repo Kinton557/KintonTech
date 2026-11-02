@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Staff calls</title>
+<link rel="stylesheet" href="staff.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html" id="brand">Staff calls</a>
+  <div class="who hide" id="who">
+    <span class="avatar" id="meAvatar"></span>
+    <button class="ghost" id="logoutBtn">Log out</button>
+  </div>
+</header>
+
+<main>
+  <section id="loginView" class="login">
+    <h1>Welcome back</h1>
+    <p class="sub">Log in with the email and password the admin gave you.</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" inputmode="email">
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="primary wide" id="loginBtn">Log in</button>
+  </section>
+
+  <section id="groupsView" class="hide">
+    <div class="intro">
+      <h1 id="hello"></h1>
+      <p class="sub">Pick a group to start or join its video call.</p>
+    </div>
+    <div class="adminbar hide" id="adminBox">
+      <input id="groupName" type="text" placeholder="New group name, e.g. All Staff" maxlength="40">
+      <button class="primary" id="createBtn">Create group</button>
+    </div>
+    <div class="grid" id="groupList"></div>
+  </section>
+</main>
+
+<dialog id="joinDialog">
+  <h2 id="joinTitle"></h2>
+  <p class="sub">Choose how you want to join.</p>
+  <label class="opt"><input type="checkbox" id="optMic" checked><span>Microphone on</span></label>
+  <label class="opt"><input type="checkbox" id="optCam"><span>Camera on</span></label>
+  <label class="opt"><input type="checkbox" id="optSaver" checked><span>Data saver<small>Lower video quality, uses less data</small></span></label>
+  <div class="actions">
+    <button class="ghost" id="joinCancel">Cancel</button>
+    <button class="primary" id="joinGo">Start call</button>
+  </div>
+</dialog>
+
+<div id="callView" class="hide">
+  <div class="callbar">
+    <div><strong id="callTitle"></strong><span class="timer" id="callTimer">00:00</span></div>
+    <button class="leave" id="leaveBtn">Leave</button>
+  </div>
+  <div id="callFrame"></div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://meet.jit.si/external_api.js"></script>
+<script src="staff-config.js"></script>
+<script src="staff.js"></script>
+</body>
+</html>
