@@ -15,6 +15,18 @@ for (const name of ["PAYNOW_INTEGRATION_ID", "PAYNOW_INTEGRATION_KEY", "PAYNOW_M
   if (!env[name]) { console.error("Missing setting: " + name); process.exit(1); }
 }
 
+// Direct EcoCash (EcoCash Instant Payments). Turned on by adding EIP_USERNAME and EIP_PASSWORD on Render.
+// Leave them out and EcoCash goes through Paynow like before.
+const EIP_ON = !!(env.EIP_USERNAME && env.EIP_PASSWORD);
+const EIP_BASE = (env.EIP_BASE_URL || "https://developers.ecocash.co.zw/sandbox/payment/v1").replace(/\/+$/, "");
+const EIP_SANDBOX = EIP_BASE.includes("/sandbox/");
+const EIP_CURRENCY = env.EIP_CURRENCY || "USD";
+if (EIP_ON) {
+  for (const name of ["EIP_MERCHANT_CODE", "EIP_MERCHANT_PIN", "EIP_MERCHANT_NUMBER", "EIP_TERMINAL_ID", "EIP_MERCHANT_NAME"]) {
+    if (!env[name]) { console.error("Missing setting: " + name); process.exit(1); }
+  }
+}
+
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(env.FIREBASE_SERVICE_ACCOUNT)) });
 const db = admin.firestore();
 
@@ -54,12 +66,67 @@ function hashIsValid(body) {
   return expected === String(body.hash || "").toUpperCase();
 }
 
+// Marks the shop order paid once money is confirmed. Shared by Paynow and EcoCash.
+async function markOrderPaid(saved, ref) {
+  if (!saved.orderId) return;
+  await db.collection("orders").doc(saved.orderId).update({
+    paid: true,
+    paidAt: admin.firestore.FieldValue.serverTimestamp(),
+    paynowRef: ref,
+    paidAmount: saved.amount,
+  }).catch((err) => console.error("Could not mark order paid:", err));
+}
+
+// One call to the EcoCash API. Never throws on a bad status, the caller reads httpStatus and body.
+async function ecocash(method, path, payload) {
+  const login = Buffer.from(env.EIP_USERNAME + ":" + env.EIP_PASSWORD).toString("base64");
+  const res = await fetch(EIP_BASE + path, {
+    method,
+    headers: { Authorization: "Basic " + login, "Content-Type": "application/json", Accept: "application/json" },
+    body: payload ? JSON.stringify(payload) : undefined,
+    signal: AbortSignal.timeout(30000),
+  });
+  const body = await res.json().catch(() => ({}));
+  return { httpStatus: res.status, body };
+}
+
+// Asks EcoCash how a charge went. EcoCash answers PENDING, SUCCESS or FAILED.
+async function refreshEcoCash(snap, saved) {
+  if (saved.status === "failed") return saved;
+  const path = "/" + encodeURIComponent(saved.msisdn) + "/transactions/amount/" + encodeURIComponent(saved.ref);
+  const r = await ecocash("GET", path);
+  if (r.httpStatus === 404) return saved; // EcoCash has not registered it (yet), keep waiting
+  if (r.httpStatus !== 200) throw new Error("EcoCash lookup answered " + r.httpStatus);
+  const code = String(r.body.status || "").toUpperCase();
+  console.log("EcoCash status for " + saved.ref + ": " + code);
+
+  let status = "pending";
+  let paid = false;
+  let message = null;
+  if (code === "SUCCESS") {
+    if (r.body.amount !== undefined && Math.round(Number(r.body.amount) * 100) !== Math.round(saved.amount * 100)) {
+      status = "amount mismatch";
+    } else {
+      status = "paid";
+      paid = true;
+    }
+  } else if (code === "FAILED") {
+    status = "failed";
+    message = r.body.statusMessage || null;
+  }
+  const update = { status, paid, message, ecocashRef: r.body.transactionId || saved.ecocashRef || null, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+  await snap.ref.update(update);
+  if (paid) await markOrderPaid(saved, saved.ref);
+  return { ...saved, ...update };
+}
+
 // Ask Paynow directly what happened. This is the answer we trust.
 async function refreshStatus(ref) {
   const snap = await db.collection(COLLECTION).doc(ref).get();
   if (!snap.exists) return null;
   const saved = snap.data();
   if (saved.paid) return saved;
+  if (saved.provider === "ecocash") return refreshEcoCash(snap, saved);
 
   const result = await paynowClient(ref).pollTransaction(saved.pollUrl);
   const status0 = String(result.status || "unknown");
@@ -73,19 +140,12 @@ async function refreshStatus(ref) {
   }
   const update = { status, paid, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
   await snap.ref.update(update);
-  if (paid && saved.orderId) {
-    await db.collection("orders").doc(saved.orderId).update({
-      paid: true,
-      paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      paynowRef: ref,
-      paidAmount: saved.amount,
-    }).catch((err) => console.error("Could not mark order paid:", err));
-  }
+  if (paid) await markOrderPaid(saved, ref);
   return { ...saved, ...update };
 }
 
 // Used to wake the server up when the pay page opens.
-app.get("/health", (req, res) => res.json({ ok: true, mode: LIVE ? "live" : "test" }));
+app.get("/health", (req, res) => res.json({ ok: true, mode: LIVE ? "live" : "test", ecocash: EIP_ON ? (EIP_SANDBOX ? "sandbox" : "live") : "paynow" }));
 
 // Works out what an order really costs from the shop's own prices, not from the browser.
 async function priceOrder(orderId) {
@@ -113,6 +173,75 @@ function localPhone(raw) {
   return d;
 }
 
+// 0771234567 -> 263771234567, the form EcoCash expects.
+function intlPhone(local) {
+  return "263" + String(local).replace(/^0/, "");
+}
+
+// Starts a direct EcoCash charge. The customer gets the PIN prompt on their phone.
+async function startEcoCash({ ref, item, name, phone, orderId, itemKey }) {
+  const msisdn = intlPhone(phone);
+  const doc = db.collection(COLLECTION).doc(ref);
+  // Saved before we call EcoCash, so a timeout can always be looked up and never charged twice.
+  await doc.set({
+    ref,
+    provider: "ecocash",
+    item: itemKey || null,
+    orderId,
+    amount: item.amount,
+    name,
+    phone,
+    msisdn,
+    method: "ecocash",
+    mode: EIP_SANDBOX ? "test" : "live",
+    status: "created",
+    paid: false,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const payload = {
+    clientCorrelator: ref,
+    notifyUrl: "",
+    referenceCode: ref,
+    tranType: "MER",
+    endUserId: msisdn,
+    remarks: item.name,
+    transactionOperationStatus: "Charged",
+    paymentAmount: {
+      charginginformation: { amount: item.amount.toFixed(2), currency: EIP_CURRENCY, description: item.name },
+      chargeMetaData: { channel: env.EIP_CHANNEL || "WEB" },
+    },
+    merchantCode: env.EIP_MERCHANT_CODE,
+    merchantPin: env.EIP_MERCHANT_PIN,
+    merchantNumber: env.EIP_MERCHANT_NUMBER,
+    countryCode: "ZW",
+    terminalID: env.EIP_TERMINAL_ID,
+    location: env.EIP_LOCATION || "Harare",
+    superMerchantName: env.EIP_SUPER_MERCHANT_NAME || "ECOCASH",
+    merchantName: env.EIP_MERCHANT_NAME,
+  };
+
+  let r;
+  try {
+    r = await ecocash("POST", "/transactions/amount/", payload);
+  } catch (err) {
+    // No answer in time. The request may still have reached the phone, so do not send it again.
+    console.error("EcoCash charge got no answer for " + ref + ":", err.message);
+    return { ref, mobile: true };
+  }
+
+  if (r.httpStatus !== 200) {
+    console.error("EcoCash refused " + ref + ": " + r.httpStatus + " " + (r.body.statusMessage || ""));
+    await doc.update({ status: "failed", message: r.body.statusMessage || "Refused", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const text = r.httpStatus === 422 && r.body.statusMessage ? r.body.statusMessage : "EcoCash could not start this payment. Please check the number and try again.";
+    const err = new Error(text);
+    err.userFacing = true;
+    throw err;
+  }
+  await doc.update({ ecocashRef: r.body.transactionId || null });
+  return { ref, mobile: true };
+}
+
 app.post("/createPayment", async (req, res) => {
   const body = req.body || {};
   let item = ITEMS[body.item];
@@ -135,9 +264,18 @@ app.post("/createPayment", async (req, res) => {
   if (method === "ecocash" && !/^07[78]\d{7}$/.test(phone)) {
     return res.status(400).json({ error: "Please enter your EcoCash number, for example 0771234567." });
   }
-  if (LIVE && !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "Please enter a valid email." });
+  if (LIVE && !(method === "ecocash" && EIP_ON) && !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "Please enter a valid email." });
 
   const ref = "KT-" + Date.now().toString(36).toUpperCase() + crypto.randomBytes(2).toString("hex").toUpperCase();
+
+  if (method === "ecocash" && EIP_ON) {
+    try {
+      return res.json(await startEcoCash({ ref, item, name, phone, orderId, itemKey: body.item }));
+    } catch (err) {
+      console.error("EcoCash createPayment failed:", err);
+      return res.status(err.userFacing ? 502 : 500).json({ error: err.userFacing ? err.message : "Something went wrong. Please try again." });
+    }
+  }
   // In test mode Paynow only accepts the merchant's own email here.
   const authEmail = LIVE ? email : env.PAYNOW_MERCHANT_EMAIL;
 
@@ -200,7 +338,7 @@ app.get("/paymentStatus", async (req, res) => {
   try {
     const found = await refreshStatus(ref);
     if (!found) return res.status(404).json({ error: "Payment not found." });
-    res.json({ ref, status: found.status, paid: !!found.paid, amount: found.amount, orderId: found.orderId || null });
+    res.json({ ref, status: found.status, paid: !!found.paid, amount: found.amount, orderId: found.orderId || null, message: found.message || null });
   } catch (err) {
     console.error("paymentStatus failed:", err);
     res.status(500).json({ error: "Could not check the payment." });

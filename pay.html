@@ -24,14 +24,14 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pay | Kinton Technologies</title>
-<meta name="description" content="Pay Kinton Technologies securely through Paynow.">
+<meta name="description" content="Pay Kinton Technologies securely with EcoCash, InnBucks, Zimswitch and more.">
 <meta name="theme-color" content="#151515">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="canonical" href="https://kintontechnologies.co.zw/pay.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kinton Technologies">
 <meta property="og:title" content="Pay | Kinton Technologies">
-<meta property="og:description" content="Pay Kinton Technologies securely through Paynow.">
+<meta property="og:description" content="Pay Kinton Technologies securely with EcoCash, InnBucks, Zimswitch and more.">
 <meta property="og:url" content="https://kintontechnologies.co.zw/pay.html">
 <meta property="og:image" content="https://kintontechnologies.co.zw/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -63,7 +63,7 @@
   </div>
 </header>
 <main id="main">
-<div class="page-head"><div class="wrap"><h1>Pay Kinton Technologies</h1><p>Enter your details, then you go to Paynow to choose how to pay (EcoCash, InnBucks, Zimswitch and more).</p></div></div>
+<div class="page-head"><div class="wrap"><h1>Pay Kinton Technologies</h1><p>Pay with EcoCash straight from your phone, or go on to choose InnBucks, Zimswitch and more.</p></div></div>
 <div class="section"><div class="wrap">
   <form class="panel" id="pay-form" novalidate style="max-width:34rem">
     <div class="form-grid">
@@ -76,7 +76,7 @@
     <p id="test-note" hidden style="font-size:.85rem;color:var(--danger);margin:0 0 1rem">Test mode: no real money moves. For EcoCash use 0771111111 (success), 0772222222 (success after a delay), 0773333333 (cancelled) or 0774444444 (not enough money).</p>
     <button class="btn" type="submit" id="pay-btn">Pay now</button>
     <div id="msg" class="msg" role="alert"></div>
-    <p style="font-size:.85rem;color:var(--muted);margin:1rem 0 0">Payments are processed by Paynow. We never see your card or wallet PIN.</p>
+    <p style="font-size:.85rem;color:var(--muted);margin:1rem 0 0">EcoCash payments go through EcoCash, the other methods through Paynow. We never see your card or wallet PIN.</p>
   </form>
 </div></div>
 </main>
@@ -107,7 +107,13 @@ document.addEventListener('DOMContentLoaded', function () {
   methodSel.addEventListener('change', syncMethod);
   // also wakes the payment server
   fetch(api + '/health').then(function (r) { return r.json(); }).then(function (j) {
-    if (j.mode === 'test') document.getElementById('test-note').hidden = false;
+    var note = document.getElementById('test-note');
+    if (j.ecocash === 'sandbox') {
+      note.textContent = 'Test mode: no real money moves. Only EcoCash numbers added to the EcoCash developer portal can be charged. On the phone, PIN 0000 pays, 1111 means not enough money, 2222 is a wrong PIN.';
+      note.hidden = false;
+    } else if (j.mode === 'test') {
+      note.hidden = false;
+    }
   }).catch(function () {});
 
   form.addEventListener('submit', function (e) {
@@ -125,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     btn.disabled = true;
-    btn.textContent = 'Connecting to Paynow...';
+    btn.textContent = 'Starting your payment...';
     var slow = setTimeout(function () { msg.textContent = 'Starting the secure payment server, this can take up to a minute...'; }, 6000);
     fetch(api + '/createPayment', {
       method: 'POST',

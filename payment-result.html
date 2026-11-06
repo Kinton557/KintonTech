@@ -24,14 +24,14 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Payment result | Kinton Technologies</title>
-<meta name="description" content="Check the result of your Paynow payment.">
+<meta name="description" content="Check the result of your payment.">
 <meta name="theme-color" content="#151515">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="canonical" href="https://kintontechnologies.co.zw/payment-result.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kinton Technologies">
 <meta property="og:title" content="Payment result | Kinton Technologies">
-<meta property="og:description" content="Check the result of your Paynow payment.">
+<meta property="og:description" content="Check the result of your payment.">
 <meta property="og:url" content="https://kintontechnologies.co.zw/payment-result.html">
 <meta property="og:image" content="https://kintontechnologies.co.zw/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -63,11 +63,11 @@
   </div>
 </header>
 <main id="main">
-<div class="page-head"><div class="wrap"><h1>Payment result</h1><p id="sub">Checking with Paynow...</p></div></div>
+<div class="page-head"><div class="wrap"><h1>Payment result</h1><p id="sub">Checking your payment...</p></div></div>
 <div class="section"><div class="wrap">
   <div class="panel" style="max-width:34rem">
     <h2 id="title" style="margin-top:0">One moment</h2>
-    <p id="detail">We are confirming your payment directly with Paynow.</p>
+    <p id="detail">We are confirming your payment with the payment provider.</p>
     <p style="font-size:.85rem;color:var(--muted)">Reference: <strong id="ref">-</strong></p>
     <a class="btn btn-line" id="again" href="pay.html" hidden>Try again</a>
     <a class="btn" id="inv-link" href="account.html" hidden>View invoice</a>
@@ -116,10 +116,10 @@ document.addEventListener('DOMContentLoaded', function () {
           if (j.orderId) { $('inv-link').href = 'invoice.html?id=' + encodeURIComponent(j.orderId); $('inv-link').hidden = false; }
           return show('Payment received', 'Thank you. $' + Number(j.amount).toFixed(2) + ' was paid.', true, false);
         }
-        if (/cancel|fail|declin|disputed|refund|mismatch/.test(s)) return show('Payment not completed', 'Status: ' + j.status + '. You have not been charged for this attempt.', true, true);
+        if (/cancel|fail|declin|disputed|refund|mismatch/.test(s)) return show('Payment not completed', (j.message ? j.message + '. ' : 'Status: ' + j.status + '. ') + 'You have not been charged for this attempt.', true, true);
         // still waiting (mobile money can take a moment): ask again for up to about two minutes
         if (tries < 24) { show('Waiting for payment', 'Status: ' + j.status + '. If EcoCash asked for your PIN, please enter it on your phone.', false, false); return setTimeout(check, 5000); }
-        show('Still pending', 'Paynow has not confirmed this payment yet. Please check again in a few minutes.', true, true);
+        show('Still pending', 'This payment has not been confirmed yet. Please check again in a few minutes.', true, true);
       })
       .catch(function () { show('Could not check the payment', 'Please refresh this page in a moment.', true, false); });
   }

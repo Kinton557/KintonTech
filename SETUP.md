@@ -61,3 +61,26 @@ It makes Firebase itself refuse requests that do not come from your real site. A
 2. Upload all website files, including the new `track.js`, `motion.js`, `modern.css`, `admin-stats.js`, `manifest.webmanifest` and `sw.js`.
 3. Open Dashboard > Analytics. Owners and admins see it automatically. For staff, tick **Analytics** in Staff & users.
 Visits are anonymous (no names, emails, IP addresses or cookies). Staff visits are never counted.
+
+## Direct EcoCash payments (EcoCash Instant Payments)
+EcoCash can be charged straight through EcoCash's own API instead of Paynow. The customer gets the PIN prompt on their phone and never leaves our page.
+InnBucks, Zimswitch and the other methods still go through Paynow.
+
+It switches on by itself when the settings below exist on Render (Environment tab). Remove `EIP_USERNAME` and EcoCash goes back through Paynow.
+
+| Setting | Where to get it |
+| --- | --- |
+| `EIP_BASE_URL` | Sandbox: `https://developers.ecocash.co.zw/sandbox/payment/v1`. Live: the address EcoCash sends with your production credentials. |
+| `EIP_USERNAME`, `EIP_PASSWORD` | developers.ecocash.co.zw > Instant Payments > Credentials (the password is in the portal Inbox) |
+| `EIP_MERCHANT_CODE`, `EIP_MERCHANT_PIN`, `EIP_MERCHANT_NUMBER` | Same page, "Sandbox test values" |
+| `EIP_TERMINAL_ID`, `EIP_MERCHANT_NAME` | Same page. If you cannot see them, ask EcoCash support. |
+| `EIP_SUPER_MERCHANT_NAME`, `EIP_LOCATION`, `EIP_CHANNEL`, `EIP_CURRENCY` | Optional. Defaults: `ECOCASH`, `Harare`, `WEB`, `USD`. |
+
+Never put these in GitHub. They only live on Render.
+
+Testing in the sandbox:
+1. In the portal, add your own EcoCash number under **Test Numbers** and verify it with the code EcoCash sends. Only verified numbers can be charged.
+2. Pay on pay.html with that number. On your phone enter PIN `0000` to succeed, `1111` not enough money, `2222` wrong PIN, `9999` limit exceeded.
+3. Run all of these, then use the portal's Production tab to send your test evidence and ask for live credentials.
+
+Things EcoCash has not published, so ask their support before going live: the callback format (we check the result by asking EcoCash instead of waiting for a callback) and whether the amount must be sent as text like `"1.00"` (that is what we send).

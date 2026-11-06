@@ -69,7 +69,7 @@
   <article class="invoice inv-doc" id="inv" hidden></article>
   <aside class="panel inv-pay no-print" id="pay-box" hidden>
     <h3 style="margin-top:0">Pay this invoice</h3>
-    <p class="muted" style="margin-top:0">Pay securely with Paynow. We never see your PIN or card details.</p>
+    <p class="muted" style="margin-top:0">Pay securely with EcoCash or through Paynow. We never see your PIN or card details.</p>
     <form id="pay-form" novalidate>
       <div class="field"><label for="p-method">How do you want to pay?</label><select id="p-method"><option value="ecocash">EcoCash (PIN prompt on your phone)</option><option value="redirect">InnBucks, Zimswitch, bank and others</option></select></div>
       <div class="field"><label for="p-phone" id="p-phone-label">EcoCash number</label><input id="p-phone" type="tel" maxlength="16" placeholder="0771234567"></div>
@@ -152,13 +152,13 @@ document.addEventListener('DOMContentLoaded', function () {
     $('p-phone').value = o.phone || '';
     var sel = $('p-method'), label = $('p-phone-label'), btn = $('pay-btn'), msg = $('msg');
     sel.addEventListener('change', function () { label.textContent = sel.value === 'ecocash' ? 'EcoCash number' : 'Phone number'; });
-    fetch(API + '/health').then(function (r) { return r.json(); }).then(function (j) { if (j.mode === 'test') $('test-note').hidden = false; }).catch(function () {});
+    fetch(API + '/health').then(function (r) { return r.json(); }).then(function (j) { if (j.ecocash === 'sandbox') { $('test-note').textContent = 'Test mode: no real money moves. Only EcoCash numbers added to the EcoCash developer portal can be charged. On the phone, PIN 0000 pays, 1111 means not enough money, 2222 is a wrong PIN.'; $('test-note').hidden = false; } else if (j.mode === 'test') $('test-note').hidden = false; }).catch(function () {});
     $('pay-form').addEventListener('submit', function (e) {
       e.preventDefault();
       msg.textContent = '';
       var phone = $('p-phone').value.trim();
       if (phone.replace(/\D/g, '').length < 9) { msg.textContent = 'Please enter a valid phone number.'; return; }
-      btn.disabled = true; btn.textContent = 'Connecting to Paynow...';
+      btn.disabled = true; btn.textContent = 'Starting your payment...';
       var slow = setTimeout(function () { msg.textContent = 'Starting the secure payment server, this can take up to a minute...'; }, 6000);
       fetch(API + '/createPayment', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
