@@ -30,7 +30,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="modern.css">
 <script src="config.js" defer></script>
@@ -39,6 +39,7 @@
 <script src="track.js" defer></script>
 <script src="motion.js" defer></script>
 <script src="app-shell.js" defer></script>
+<script src="briefing.js" defer></script>
 <script src="guide.js" defer></script>
 </head>
 <body data-page="account">
@@ -63,6 +64,7 @@
     <p class="msg ok" id="acc-pending" hidden>Your admin request is waiting for approval. You can order as a customer meanwhile.</p>
     <div class="cta-row"><a class="btn" id="acc-admin" href="admin.html" hidden>Open admin dashboard</a><button class="btn btn-line" type="button" id="signout">Sign out</button></div>
   </div>
+  <div id="profile-box"></div>
   <h2 style="font-size:1.4rem">My orders</h2>
   <div class="list" id="orders"><p class="muted">Loading...</p></div>
   <h2 style="font-size:1.4rem;margin-top:2.5rem">Support</h2>

@@ -30,7 +30,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="modern.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Kinton Technologies","url":"https://kintontechnologies.co.zw","logo":"https://kintontechnologies.co.zw/assets/icon-192.png","slogan":"Building ideas. Creating solutions.","address":{"@type":"PostalAddress","addressLocality":"Kadoma","addressCountry":"ZW"},"founder":{"@type":"Person","name":"Tanaka Shanon Mujikijera"},"telephone":"+263775610805"}</script>
@@ -40,6 +40,7 @@
 <script src="track.js" defer></script>
 <script src="motion.js" defer></script>
 <script src="app-shell.js" defer></script>
+<script src="depth.js" defer></script>
 <script src="guide.js" defer></script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ProfessionalService","name":"Kinton Technologies","url":"https://kintontechnologies.co.zw","logo":"https://kintontechnologies.co.zw/assets/icon-192.png","telephone":"+263775610805","slogan":"Building ideas. Creating solutions.","address":{"@type":"PostalAddress","addressLocality":"Kadoma","addressCountry":"ZW"},"areaServed":"ZW","sameAs":[]}</script>
 </head>
@@ -58,12 +59,19 @@
 </header>
 <main id="main">
 <section class="hero">
-  <div class="wrap"><div class="hero-inner">
-    <h1 data-content="heroTitle">Websites, apps and brands for Zimbabwean businesses.</h1>
-    <p class="lead" data-content="heroText">Kinton Technologies is a software and design studio in Kadoma. Pick a package in the shop, or tell us what you need and we will send a quote.</p>
-    <div class="cta-row"><a class="btn" href="shop.html">Browse the shop</a><a class="btn btn-line" href="contact.html">Get a quote</a></div>
-  </div></div>
-  <div class="slab-wrap" aria-hidden="true"><div class="slab slab-gold"></div><div class="slab slab-ink"><img src="assets/logo-mark-hero.png" alt="" width="360" height="360"></div></div>
+  <div class="wrap hero-grid">
+    <div class="hero-inner">
+      <button class="ai-pill" type="button" id="ask-pill"><span class="dot" aria-hidden="true"></span>Ask Kinton &middot; type or talk</button>
+      <h1 data-content="heroTitle">Websites, apps and brands for Zimbabwean businesses.</h1>
+      <p class="lead" data-content="heroText">Kinton Technologies is a software and design studio in Kadoma. Pick a package in the shop, or tell us what you need and we will send a quote.</p>
+      <div class="cta-row"><a class="btn" href="shop.html">Browse the shop</a><a class="btn btn-line" href="contact.html">Get a quote</a></div>
+    </div>
+    <div class="stage" aria-hidden="true"><div class="stage-inner" id="stage">
+      <div class="dev dev-back"><div class="dev-bar"><i></i><i></i><i></i></div><img src="assets/labs/cws.jpg" alt="" width="640" height="400" loading="lazy"></div>
+      <div class="dev dev-front"><div class="dev-bar"><i></i><i></i><i></i></div><img src="assets/labs/ricmuk.jpg" alt="" width="640" height="400"></div>
+      <div class="dev-mark"><img src="assets/logo-mark.png" alt="" width="64" height="64"></div>
+    </div></div>
+  </div>
 </section>
 
 <section class="section">
@@ -129,7 +137,7 @@
 <section class="section tint">
   <div class="wrap">
     <h2>The people behind Kinton</h2>
-    <div class="people">
+    <div class="people" id="team-box">
       <div class="person"><div class="avatar" aria-hidden="true">TM</div><div><h3>Tanaka Shanon Mujikijera</h3><p>Founder and CEO</p></div></div>
       <div class="person"><div class="avatar" aria-hidden="true">DM</div><div><h3>Denzel Mangani</h3><p>Co-founder</p></div></div>
     </div>

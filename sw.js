@@ -1,7 +1,7 @@
 /* Kinton Technologies - service worker. Pages are fetched fresh so updates show straight away;
    the last good copy (or offline.html) is used only when there is no connection.
    Payments and the database (other origins) are never touched. */
-const CACHE = 'kinton-v3';
+const CACHE = 'kinton-v6';
 const SHELL = ['/', '/index.html', '/offline.html', '/style.css', '/modern.css', '/app-shell.js', '/assets/logo-mark.png', '/assets/logo-mark-light.png', '/assets/icon-192.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {

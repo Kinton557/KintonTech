@@ -24,6 +24,9 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true;
     }
     function text(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
+    // Optional profile text: may be missing or empty, never too long
+    function optText(d, k, max) { return !(k in d) || (d[k] is string && d[k].size() <= max); }
+    function profileOk(d) { return optText(d, 'phone', 20) && optText(d, 'city', 60) && optText(d, 'address', 160) && optText(d, 'business', 80); }
 
     // ---------- customers ----------
     match /users/{uid} {
@@ -31,14 +34,16 @@ service cloud.firestore {
       allow list: if isAdminRole();
       // A new account can only describe itself. It can never give itself a role.
       allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'email', 'adminRequested', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'adminRequested', 'createdAt', 'phone', 'city', 'address', 'business', 'provider'])
+        && request.resource.data.keys().hasAll(['name', 'email', 'adminRequested', 'createdAt'])
         && text(request.resource.data.name, 80) && text(request.resource.data.email, 120)
+        && profileOk(request.resource.data) && optText(request.resource.data, 'provider', 20)
         && request.resource.data.adminRequested is bool
         && request.resource.data.createdAt == request.time;
-      // Customers may only rename themselves. Admins may suspend or clear a staff request.
+      // Customers may only edit their own name and contact details. Admins may suspend or clear a staff request.
       allow update: if (signedIn() && request.auth.uid == uid
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
-                        && text(request.resource.data.name, 80))
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'city', 'address', 'business'])
+                        && text(request.resource.data.name, 80) && profileOk(request.resource.data))
                     || (isAdminRole() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['suspended', 'adminRequested']));
       allow delete: if false;
     }

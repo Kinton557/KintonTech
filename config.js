@@ -26,6 +26,11 @@ appId: "1:384922068250:web:6f8a78cde94870798cb8a3"
   appCheckSiteKey: "",
 
   // Business details used across the site
+  // Address of the Kinton server on Render. It sends email codes and answers AI questions.
+  apiBase: "https://kinton-pay.onrender.com",
+  // Set to false to turn the AI assistant off and use only the ready-made answers.
+  aiEnabled: true,
+
   whatsappNumber: "263775610805",
   whatsappDisplay: "+263 77 561 0805",
   currencySymbol: "$"

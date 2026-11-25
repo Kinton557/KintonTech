@@ -72,7 +72,7 @@
   function setDemoUser(id) {
     var u = D.get('users', []).find(function (x) { return x.uid === id; });
     if (!u || u.suspended) { Store.user = null; return; }
-    Store.user = { uid: u.uid, name: u.name, email: u.email, role: u.role || 'customer', perms: u.perms || [], isAdmin: isStaffRole(u.role), isOwner: u.role === 'owner', adminRequested: !!u.adminRequested };
+    Store.user = { uid: u.uid, name: u.name, email: u.email, role: u.role || 'customer', perms: u.perms || [], isAdmin: isStaffRole(u.role), isOwner: u.role === 'owner', adminRequested: !!u.adminRequested, phone: u.phone || '', city: u.city || '', address: u.address || '', business: u.business || '', emailVerified: u.verified !== false, phoneVerified: !!u.phoneVerified };
   }
   function demoInit() {
     if (!D.get('products')) D.set('products', Store.sampleProducts.map(function (p, i) { return Object.assign({ id: 'p' + (i + 1), updatedAt: Date.now() }, p); }));
@@ -80,19 +80,31 @@
     var sid = D.get('session'); if (sid) setDemoUser(sid);
     return Promise.resolve();
   }
-  function pubUser(u) { return { uid: u.uid, name: u.name, email: u.email, role: u.role || 'customer', perms: u.perms || [], suspended: !!u.suspended, adminRequested: !!u.adminRequested, createdAt: u.createdAt }; }
+  function pubUser(u) { return { uid: u.uid, name: u.name, email: u.email, role: u.role || 'customer', perms: u.perms || [], suspended: !!u.suspended, adminRequested: !!u.adminRequested, createdAt: u.createdAt, phone: u.phone || '', city: u.city || '', address: u.address || '', business: u.business || '', emailVerified: true }; }
   function mapUser(uid, fn) { D.set('users', D.get('users', []).map(function (u) { return u.uid === uid ? fn(u) : u; })); }
   function need(mod) { return Store.can(mod) ? null : Promise.reject(new Error('You do not have permission to do that.')); }
 
   var demoApi = {
-    signUp: function (name, email, password, wantAdmin) {
+    signUp: function (name, email, password, wantAdmin, extra) {
+      extra = extra || {};
       var users = D.get('users', []); email = email.toLowerCase();
       if (users.some(function (u) { return u.email === email; })) return Promise.reject(new Error('An account with this email already exists. Try signing in.'));
       var first = !users.some(function (u) { return isStaffRole(u.role); });
-      var u = { uid: 'u' + uid8(), name: name, email: email, pass: D.hash(password), role: (wantAdmin && first) ? 'owner' : 'customer', perms: [], suspended: false, adminRequested: !!(wantAdmin && !first), createdAt: Date.now() };
+      var u = { uid: 'u' + uid8(), name: name, email: email, pass: D.hash(password), role: (wantAdmin && first) ? 'owner' : 'customer', perms: [], suspended: false, adminRequested: !!(wantAdmin && !first), createdAt: Date.now(), phone: extra.phone || '', city: extra.city || '', address: extra.address || '', business: extra.business || '', verified: false };
       users.push(u); D.set('users', users); D.set('session', u.uid); setDemoUser(u.uid); notify();
       return Promise.resolve(Store.user);
     },
+    signInGoogle: function () { return Promise.reject(new Error('Google sign-in works on the live site, not in demo mode.')); },
+    updateProfile: function (p) { mapUser(Store.user.uid, function (u) { var n = Object.assign({}, u, p); if (p.phone != null && p.phone !== u.phone) n.phoneVerified = false; return n; }); setDemoUser(Store.user.uid); notify(); return Promise.resolve(Store.user); },
+    sendEmailOtp: function () { return Promise.resolve({ ok: true, demo: true }); },
+    verifyEmailOtp: function (code) { if (String(code) !== '123456') return Promise.reject(new Error('That code is not right. In demo mode use 123456.')); mapUser(Store.user.uid, function (u) { return Object.assign({}, u, { verified: true }); }); setDemoUser(Store.user.uid); notify(); return Promise.resolve(Store.user); },
+    sendVerifyLink: function () { return Promise.resolve(); },
+    sendPhoneOtp: function (phone) { return Promise.resolve({ ok: true, demo: true }); },
+    verifyPhoneOtp: function (code, phone) {
+      if (String(code) !== '123456') return Promise.reject(new Error('That code is not right. In demo mode use 123456.'));
+      mapUser(Store.user.uid, function (u) { return Object.assign({}, u, { phone: phone, phoneVerified: true }); }); setDemoUser(Store.user.uid); notify(); return Promise.resolve(Store.user);
+    },
+    refreshVerified: function () { return Promise.resolve(Store.user); },
     signIn: function (email, password) {
       var u = D.get('users', []).find(function (x) { return x.email === email.toLowerCase() && x.pass === D.hash(password); });
       if (!u) return Promise.reject(new Error('Email or password is incorrect.'));
@@ -139,6 +151,8 @@
     replyTicketAsCustomer: function (id, replies) { D.set('col_tickets', D.get('col_tickets', []).map(function (t) { return t.id === id ? Object.assign({}, t, { replies: replies, status: 'open', updatedAt: Date.now() }) : t; })); return Promise.resolve(); },
     getContent: function () { return Promise.resolve(D.get('content', {})); },
     saveContent: function (c) { D.set('content', c); return Promise.resolve(); },
+    getTeam: function () { return Promise.resolve(D.get('team', {})); },
+    saveTeam: function (t) { D.set('team', t); return Promise.resolve(); },
 
     // people
     listUsers: function () { return Promise.resolve(D.get('users', []).filter(function (u) { return !isStaffRole(u.role); }).map(pubUser)); },
@@ -176,6 +190,18 @@
       'auth/invalid-credential': 'Email or password is incorrect.', 'auth/wrong-password': 'Email or password is incorrect.', 'auth/user-not-found': 'Email or password is incorrect.',
       'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
       'auth/network-request-failed': 'No connection. Check your internet and try again.',
+      'auth/popup-closed-by-user': 'Google sign-in was closed before it finished.', 'auth/cancelled-popup-request': 'Google sign-in was cancelled.',
+      'auth/operation-not-allowed': 'Google sign-in is not turned on yet.', 'auth/unauthorized-domain': 'This website address is not approved for Google sign-in yet.',
+      'auth/account-exists-with-different-credential': 'An account with this email already exists. Sign in with your password instead.',
+      'auth/invalid-phone-number': 'That phone number does not look right. Try 077 123 4567.',
+      'auth/quota-exceeded': 'SMS limit reached for now. Try again later or contact us.',
+      'auth/captcha-check-failed': 'Security check failed. Reload the page and try again.',
+      'auth/missing-phone-number': 'Enter a phone number first.',
+      'auth/invalid-verification-code': 'That code is not right. Check the SMS and try again.',
+      'auth/code-expired': 'That code has expired. Send a new one.',
+      'auth/credential-already-in-use': 'This phone number is already verified on another account.',
+      'auth/provider-already-linked': 'A phone number is already verified on this account.',
+      'auth/requires-recent-login': 'For security, sign out, sign in again, then verify your phone.',
       'permission-denied': 'You do not have permission to do that.'
     };
     return new Error(m[e && e.code] || (e && e.message && /^(That|This|You)/.test(e.message) ? e.message : 'Something went wrong. Please try again.'));
@@ -195,17 +221,28 @@
       });
     });
   }
+  function linkedPhone(u) { var p = u && (u.providerData || []).filter(function (x) { return x && x.providerId === 'phone'; })[0]; return p ? String(p.phoneNumber || '') : ''; }
+  function hasPhone(u, profilePhone) { var n = linkedPhone(u); return !!n && (profilePhone == null || n === String(profilePhone)); }
+  var phoneConfirm = null, phoneVerifier = null;
   function loadProfile(u) {
     if (!u) { Store.user = null; return Promise.resolve(); }
     var profile = {}, adm = null;
-    return db.collection('users').doc(u.uid).get().then(function (d) { if (d.exists) profile = d.data(); }).catch(function () {})
+    var isGoogle = (u.providerData || []).some(function (p) { return p && p.providerId === 'google.com'; });
+    return db.collection('users').doc(u.uid).get().then(function (d) {
+      if (d.exists) { profile = d.data(); return; }
+      if (!isGoogle) return;
+      // First Google sign-in: create the customer profile (never any role or staff access).
+      var fresh = { name: String(u.displayName || (u.email || '').split('@')[0] || 'Customer').slice(0, 80), email: String(u.email || '').toLowerCase().slice(0, 120), adminRequested: false, createdAt: ts(), provider: 'google' };
+      profile = { name: fresh.name };
+      return db.collection('users').doc(u.uid).set(fresh).catch(function () {});
+    }).catch(function () {})
       .then(function () { return db.collection('admins').doc(u.uid).get(); })
       .then(function (a) { if (a.exists) adm = a.data(); }).catch(function () {})
       .then(function () {
         var suspended = profile.suspended === true || (adm && adm.suspended === true);
         if (suspended) { Store.suspendedMsg = 'This account is suspended. Contact Kinton Technologies for help.'; Store.user = null; return auth.signOut(); }
         var role = adm ? (adm.role || 'staff') : 'customer';
-        Store.user = { uid: u.uid, email: u.email, name: profile.name || (adm && adm.name) || '', role: role, perms: (adm && adm.perms) || [], isAdmin: !!adm, isOwner: role === 'owner', adminRequested: !!profile.adminRequested };
+        Store.user = { uid: u.uid, email: u.email, name: profile.name || (adm && adm.name) || u.displayName || '', phone: profile.phone || '', city: profile.city || '', address: profile.address || '', business: profile.business || '', emailVerified: !!u.emailVerified, phoneVerified: hasPhone(u, profile.phone), role: role, perms: (adm && adm.perms) || [], isAdmin: !!adm, isOwner: role === 'owner', adminRequested: !!profile.adminRequested };
       });
   }
   function secondary() {
@@ -216,10 +253,23 @@
     return a;
   }
 
+  function serverPost(path, body) {
+    var u = auth.currentUser; if (!u) return Promise.reject(new Error('You need to sign in first.'));
+    var base = String(cfg.apiBase || 'https://kinton-pay.onrender.com').replace(/\/+$/, '');
+    return u.getIdToken().then(function (t) {
+      var ctl = window.AbortController ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, 50000);
+      return fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body || {}), signal: ctl ? ctl.signal : undefined })
+        .then(function (r) { clearTimeout(timer); return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'Something went wrong. Please try again.'); return j; }); });
+    }).catch(function (e) { throw (e && e.name === 'AbortError') || e instanceof TypeError ? new Error('The verification service is waking up. Wait a minute and try again, or use the email link instead.') : e; });
+  }
+
   var fbApi = {
-    signUp: function (name, email, password, wantAdmin) {
+    signUp: function (name, email, password, wantAdmin, extra) {
+      extra = extra || {};
       return wrap(auth.createUserWithEmailAndPassword(email, password).then(function (cred) {
-        return db.collection('users').doc(cred.user.uid).set({ name: name, email: email.toLowerCase(), adminRequested: !!wantAdmin, createdAt: ts() })
+        var doc = { name: name, email: email.toLowerCase(), adminRequested: !!wantAdmin, createdAt: ts() };
+        ['phone', 'city', 'address', 'business'].forEach(function (k) { if (extra[k]) doc[k] = String(extra[k]); });
+        return db.collection('users').doc(cred.user.uid).set(doc)
           .then(function () { return loadProfile(cred.user); }).then(function () { notify(); return Store.user; });
       }));
     },
@@ -229,6 +279,50 @@
         if (!Store.user) throw new Error(Store.suspendedMsg || 'Could not sign in.'); notify(); return Store.user;
       }));
     },
+    signInGoogle: function () {
+      Store.suspendedMsg = '';
+      var provider = new firebase.auth.GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
+      return wrap(auth.signInWithPopup(provider).catch(function (e) {
+        // Some in-app browsers block pop-ups: fall back to a full-page redirect.
+        if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) return auth.signInWithRedirect(provider).then(function () { return new Promise(function () {}); });
+        throw e;
+      }).then(function (c) { return loadProfile(c.user); }).then(function () {
+        if (!Store.user) throw new Error(Store.suspendedMsg || 'Could not sign in.'); notify(); return Store.user;
+      }));
+    },
+    updateProfile: function (p) {
+      var u = auth.currentUser; if (!u) return Promise.reject(new Error('You need to sign in first.'));
+      var clean = {}; ['name', 'phone', 'city', 'address', 'business'].forEach(function (k) { if (p[k] != null) clean[k] = String(p[k]); });
+      return wrap(db.collection('users').doc(u.uid).update(clean).then(function () { Object.assign(Store.user, clean); Store.user.phoneVerified = hasPhone(u, Store.user.phone); notify(); return Store.user; }));
+    },
+    // 6-digit email code: sent and checked by the Kinton server, which then marks the email verified in Firebase.
+    sendEmailOtp: function () { return serverPost('/otp/send', {}); },
+    verifyEmailOtp: function (code) {
+      return serverPost('/otp/verify', { code: String(code) }).then(function () { return auth.currentUser.reload(); }).then(function () { return auth.currentUser.getIdToken(true); })
+        .then(function () { Store.user.emailVerified = !!auth.currentUser.emailVerified; notify(); return Store.user; });
+    },
+    // SMS code: Firebase sends it and links the phone number to the signed-in account. Invisible reCAPTCHA guards against SMS abuse.
+    sendPhoneOtp: function (phone) {
+      var u = auth.currentUser; if (!u) return Promise.reject(new Error('You need to sign in first.'));
+      if (hasPhone(u, phone)) return Promise.resolve({ ok: true, already: true });
+      if (!/^\+263\d{8,10}$/.test(String(phone || ''))) return Promise.reject(new Error('SMS codes are only available for Zimbabwe numbers (+263) right now. Use 077 123 4567.'));
+      var drop = linkedPhone(u) ? u.unlink('phone').catch(function () {}) : Promise.resolve(); // number changed: release the old one first
+      try { if (phoneVerifier) phoneVerifier.clear(); } catch (e) {}
+      var holder = document.getElementById('phone-recaptcha');
+      if (!holder) { holder = document.createElement('div'); holder.id = 'phone-recaptcha'; document.body.appendChild(holder); }
+      holder.innerHTML = '';
+      phoneVerifier = new firebase.auth.RecaptchaVerifier(holder, { size: 'invisible' });
+      return wrap(drop.then(function () { return u.linkWithPhoneNumber(phone, phoneVerifier); }).then(function (c) { phoneConfirm = c; return { ok: true }; }).catch(function (e) { try { phoneVerifier.clear(); } catch (x) {} phoneVerifier = null; throw e; }));
+    },
+    verifyPhoneOtp: function (code, phone) {
+      if (!phoneConfirm) return Promise.reject(new Error('Send a new code first.'));
+      var u = auth.currentUser;
+      return wrap(phoneConfirm.confirm(String(code)).then(function () { phoneConfirm = null; return u.reload(); })
+        .then(function () { return db.collection('users').doc(u.uid).update({ phone: String(phone) }).catch(function () {}); })
+        .then(function () { Store.user.phone = String(phone); Store.user.phoneVerified = hasPhone(auth.currentUser, phone); notify(); return Store.user; }));
+    },
+    sendVerifyLink: function () { return wrap(auth.currentUser.sendEmailVerification({ url: location.origin + '/account.html' })); },
+    refreshVerified: function () { var u = auth.currentUser; if (!u) return Promise.resolve(Store.user); return u.reload().then(function () { Store.user.emailVerified = !!u.emailVerified; Store.user.phoneVerified = hasPhone(u, Store.user.phone); notify(); return Store.user; }); },
     signOut: function () { return wrap(auth.signOut()); },
     resetPassword: function (email) { return wrap(auth.sendPasswordResetEmail(email)); },
 
@@ -270,6 +364,8 @@
     replyTicketAsCustomer: function (id, replies) { return wrap(db.collection('tickets').doc(id).update({ replies: replies, status: 'open', updatedAt: ts() })); },
     getContent: function () { return db.collection('content').doc('site').get().then(function (d) { return d.exists ? d.data() : {}; }).catch(function () { return {}; }); },
     saveContent: function (c) { return wrap(db.collection('content').doc('site').set(c)); },
+    getTeam: function () { return db.collection('content').doc('team').get().then(function (d) { return d.exists ? d.data() : {}; }).catch(function () { return {}; }); },
+    saveTeam: function (t) { return wrap(db.collection('content').doc('team').set(t)); },
 
     listUsers: function () { return wrap(db.collection('users').get().then(function (s) { return docs(s).map(function (u) { return { uid: u.id, name: u.name, email: u.email, suspended: !!u.suspended, adminRequested: !!u.adminRequested, createdAt: u.createdAt }; }); })); },
     listStaff: function () { return wrap(db.collection('admins').get().then(function (s) { return docs(s).map(function (a) { return { uid: a.id, name: a.name || '', email: a.email || '', role: a.role || 'staff', perms: a.perms || [], suspended: !!a.suspended, createdAt: a.createdAt }; }); })); },
@@ -320,6 +416,20 @@
   Store.log = function (text) {
     if (!Store.user || !Store.user.isAdmin) return Promise.resolve();
     return api.colSave('activity', { by: Store.user.name || Store.user.email, text: String(text).slice(0, 200) }).catch(function () {});
+  };
+  // Kinton's own and client-built projects. Added from Admin > Labs; anything already there (matched by name) is left alone.
+  Store.ourProjects = [
+    { name: 'Ricmuk Enterprises', type: 'Website', stage: 'released', version: '', url: 'https://ricmuk.onrender.com', public: true, team: 'Kinton Technologies', image: 'assets/labs/ricmuk.jpg', summary: 'Online hardware store for a Kadoma supplier: roofing, steel, cement and more, with product search, a cart, collect or delivery and WhatsApp ordering.', roadmap: [], releases: [] },
+    { name: 'CWS Multimedia Connect', type: 'Website', stage: 'released', version: '', url: '', public: true, team: 'Kinton Technologies', image: 'assets/labs/cws.jpg', summary: 'Site for a Kadoma creative studio showing event flyers, brand identities and apparel mockups, with online booking and payment.', roadmap: [], releases: [] },
+    { name: 'ZimSkills', type: 'Product', stage: 'building', version: '', url: '', public: true, team: 'Kinton Technologies', image: '', summary: 'A Zimbabwe skills and jobs platform with Google sign-in, built by Kinton Technologies.', roadmap: [], releases: [] },
+    { name: 'Kintonell', type: 'App', stage: 'building', version: '', url: '', public: true, team: 'Kinton Technologies', image: '', summary: 'A Jarvis-style voice assistant for Android phones that listens, understands and acts on what you ask.', roadmap: [], releases: [] }
+  ];
+  Store.seedProjects = function () {
+    return api.colList('labs').then(function (have) {
+      var names = have.map(function (l) { return String(l.name || '').toLowerCase(); });
+      var todo = Store.ourProjects.filter(function (p) { return names.indexOf(p.name.toLowerCase()) < 0; });
+      return Promise.all(todo.map(function (p) { return api.colSave('labs', Object.assign({}, p)); })).then(function () { return { added: todo.length, skipped: Store.ourProjects.length - todo.length }; });
+    });
   };
   Store.seedLabs = function () { return Promise.all(Store.sampleLabs.map(function (l) { return api.colSave('labs', Object.assign({}, l)); })); };
   Store.ready = (DEMO ? demoInit() : firebaseInit()).catch(function (e) { console.error('Store init failed', e); Store.failed = true; });

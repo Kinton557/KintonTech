@@ -30,7 +30,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="modern.css">
 <script src="config.js" defer></script>
@@ -39,6 +39,7 @@
 <script src="track.js" defer></script>
 <script src="motion.js" defer></script>
 <script src="app-shell.js" defer></script>
+<script src="depth.js" defer></script>
 <script src="guide.js" defer></script>
 </head>
 <body data-page="about">
@@ -64,13 +65,23 @@
     <p><a class="btn" href="contact.html">Talk to us</a></p>
   </div>
   <div>
-    <h2 style="font-size:1.3rem">Founders</h2>
-    <div class="people" style="grid-template-columns:1fr">
+    <h2 style="font-size:1.3rem">The team</h2>
+    <div class="people" id="team-box" style="grid-template-columns:1fr">
       <div class="person"><div class="avatar" aria-hidden="true">TM</div><div><h3>Tanaka Shanon Mujikijera</h3><p>Founder and CEO</p></div></div>
       <div class="person"><div class="avatar" aria-hidden="true">DM</div><div><h3>Denzel Mangani</h3><p>Co-founder</p></div></div>
     </div>
   </div>
 </div></div>
+<section class="section tint"><div class="wrap">
+  <div class="section-head"><h2>How we are organised</h2></div>
+  <p class="muted" style="max-width:38rem">A small team, so you always know who is responsible for your project.</p>
+  <div class="org" id="org-box" aria-label="Team hierarchy">
+    <div class="org-tier" data-tier="1">
+      <div class="org-node"><span class="org-av" aria-hidden="true">TM</span><b>Tanaka Shanon Mujikijera</b><small>Founder and CEO</small></div>
+      <div class="org-node"><span class="org-av" aria-hidden="true">DM</span><b>Denzel Mangani</b><small>Co-founder</small></div>
+    </div>
+  </div>
+</div></section>
 </main>
 <footer class="site-footer">
   <div class="wrap">

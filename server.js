@@ -36,6 +36,7 @@ const ITEMS = {
 };
 
 const app = express();
+app.set("trust proxy", 1); // Render sits behind a proxy; this makes req.ip the visitor's address
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "10kb" }));
 
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", SITE);
   res.set("Vary", "Origin");
   res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") return res.status(204).end();
   next();
 });
@@ -145,7 +146,121 @@ async function refreshStatus(ref) {
 }
 
 // Used to wake the server up when the pay page opens.
-app.get("/health", (req, res) => res.json({ ok: true, mode: LIVE ? "live" : "test", ecocash: EIP_ON ? (EIP_SANDBOX ? "sandbox" : "live") : "paynow" }));
+
+// ---------------------------------------------------------------------------
+// Email verification codes (OTP). Sent through Brevo's HTTPS API (free plan),
+// checked here, then Firebase is told the email is verified.
+// Turn on by adding BREVO_API_KEY and MAIL_FROM on Render.
+// ---------------------------------------------------------------------------
+const MAIL_ON = !!(env.BREVO_API_KEY && env.MAIL_FROM);
+const OTP_COLLECTION = "email_otps";
+const httpErr = (status, error) => Object.assign(new Error(error), { status });
+const fail = (res, e) => { if (!e.status) console.error("otp/ai error:", e); res.status(e.status || 500).json({ error: e.status ? e.message : "Something went wrong. Please try again." }); };
+
+async function userFromToken(req) {
+  const m = (req.get("Authorization") || "").match(/^Bearer (.+)$/);
+  if (!m) throw httpErr(401, "Please sign in again.");
+  try { return await admin.auth().verifyIdToken(m[1]); } catch (e) { throw httpErr(401, "Please sign in again."); }
+}
+const otpHash = (uid, code) => crypto.createHmac("sha256", env.OTP_SECRET || env.FIREBASE_SERVICE_ACCOUNT).update(uid + ":" + code).digest("hex");
+
+async function sendMail(to, subject, html, text) {
+  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": env.BREVO_API_KEY, "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ sender: { email: env.MAIL_FROM, name: env.MAIL_FROM_NAME || "Kinton Technologies" }, to: [{ email: to }], subject, htmlContent: html, textContent: text }),
+  });
+  if (!r.ok) { console.error("Brevo error", r.status, await r.text().catch(() => "")); throw httpErr(502, "We could not send the email. Please try again, or use the email link option."); }
+}
+
+app.post("/otp/send", async (req, res) => {
+  try {
+    if (!MAIL_ON) throw httpErr(503, "Email codes are not set up yet. Please use the email link option.");
+    const tok = await userFromToken(req);
+    const user = await admin.auth().getUser(tok.uid);
+    if (!user.email) throw httpErr(400, "This account has no email address.");
+    if (user.emailVerified) return res.json({ ok: true, already: true });
+    const ref = db.collection(OTP_COLLECTION).doc(tok.uid), now = Date.now(), d = (await ref.get()).data() || {};
+    if (d.sentAt && now - d.sentAt < 60000) throw httpErr(429, "Please wait a minute before asking for another code.");
+    const fresh = d.windowStart && now - d.windowStart < 3600000;
+    const sends = fresh ? (d.sends || 0) + 1 : 1;
+    if (sends > 5) throw httpErr(429, "Too many codes requested. Try again in an hour.");
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+    await ref.set({ hash: otpHash(tok.uid, code), expires: now + 10 * 60000, attempts: 0, sentAt: now, sends, windowStart: fresh ? d.windowStart : now });
+    await sendMail(user.email, "Your Kinton verification code: " + code,
+      '<div style="font-family:Arial,sans-serif;max-width:420px"><h2 style="margin:0 0 8px">Verify your email</h2><p>Use this code on the Kinton Technologies website. It works for 10 minutes.</p>' +
+      '<p style="font-size:34px;font-weight:800;letter-spacing:8px;margin:16px 0">' + code + '</p><p style="color:#666;font-size:13px">If you did not ask for this, you can ignore this email.</p></div>',
+      "Your Kinton verification code is " + code + ". It works for 10 minutes.");
+    res.json({ ok: true, expiresInMinutes: 10 });
+  } catch (e) { fail(res, e); }
+});
+
+app.post("/otp/verify", async (req, res) => {
+  try {
+    const tok = await userFromToken(req);
+    const code = String((req.body || {}).code || "").trim();
+    if (!/^\d{6}$/.test(code)) throw httpErr(400, "Enter the 6-digit code.");
+    const ref = db.collection(OTP_COLLECTION).doc(tok.uid), d = (await ref.get()).data();
+    if (!d || Date.now() > d.expires) throw httpErr(400, "That code has expired. Ask for a new one.");
+    if ((d.attempts || 0) >= 5) throw httpErr(429, "Too many wrong tries. Ask for a new code.");
+    const a = Buffer.from(otpHash(tok.uid, code)), b = Buffer.from(d.hash);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      await ref.update({ attempts: (d.attempts || 0) + 1 });
+      throw httpErr(400, "That code is not right. Check it and try again.");
+    }
+    await admin.auth().updateUser(tok.uid, { emailVerified: true });
+    await ref.delete();
+    res.json({ ok: true });
+  } catch (e) { fail(res, e); }
+});
+
+// ---------------------------------------------------------------------------
+// AI assistant (Google Gemini free tier). The key lives only on Render.
+// Turn on by adding GEMINI_API_KEY (optional: GEMINI_MODEL) on Render.
+// ---------------------------------------------------------------------------
+const AI_ON = !!env.GEMINI_API_KEY;
+const AI_MODEL = env.GEMINI_MODEL || "gemini-2.5-flash";
+const AI_SYSTEM = [
+  "You are the Kinton Guide, the friendly assistant on the website of Kinton Technologies, a software and design studio in Kadoma, Zimbabwe.",
+  "Services: websites and online shops, Android/iOS apps, brand identity (logos, colours, social media kits), domains and hosting help.",
+  "How it works: customers pick a package in the shop or ask for a quote, we confirm scope, price and timeline on WhatsApp (+263 77 561 0805), then build. Placing an order pays nothing. Payments go through Paynow (EcoCash, InnBucks, Zimswitch, bank).",
+  "Rules: answer in 1 to 3 short sentences, plain language, in the language the person uses. Never invent prices, dates or promises; for exact prices point to the shop page, and for anything uncertain suggest WhatsApp. Do not give legal, medical or financial advice. Stay on topic: Kinton and its services, and simple help using the website.",
+].join(" ");
+const aiHits = new Map(); // ip -> { minute: [times], day: count, dayStart }
+function aiAllowed(ip) {
+  const now = Date.now(), h = aiHits.get(ip) || { t: [], day: 0, dayStart: now };
+  if (now - h.dayStart > 86400000) { h.day = 0; h.dayStart = now; }
+  h.t = h.t.filter((x) => now - x < 60000);
+  if (h.t.length >= 10 || h.day >= 100) return false;
+  h.t.push(now); h.day++; aiHits.set(ip, h);
+  if (aiHits.size > 5000) aiHits.clear();
+  return true;
+}
+app.post("/ai/chat", async (req, res) => {
+  try {
+    if (!AI_ON) throw httpErr(503, "The assistant is not switched on.");
+    if (!aiAllowed(req.ip)) throw httpErr(429, "You are asking quickly. Please wait a moment.");
+    const q = String((req.body || {}).message || "").trim().slice(0, 400);
+    if (!q) throw httpErr(400, "Ask me something.");
+    const hist = (Array.isArray((req.body || {}).history) ? req.body.history : []).slice(-6)
+      .filter((m) => m && (m.role === "user" || m.role === "model") && typeof m.text === "string")
+      .map((m) => ({ role: m.role, parts: [{ text: m.text.slice(0, 500) }] }));
+    const gen = { maxOutputTokens: 400, temperature: 0.4 };
+    if (/2\.5/.test(AI_MODEL)) gen.thinkingConfig = { thinkingBudget: 0 };
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(AI_MODEL) + ":generateContent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: AI_SYSTEM }] }, contents: [...hist, { role: "user", parts: [{ text: q }] }], generationConfig: gen }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { console.error("Gemini error", r.status, JSON.stringify(j).slice(0, 300)); throw httpErr(502, "The assistant is busy right now."); }
+    const reply = ((j.candidates || [])[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
+    if (!reply) throw httpErr(502, "The assistant had no answer.");
+    res.json({ reply });
+  } catch (e) { fail(res, e); }
+});
+
+app.get("/health", (req, res) => res.json({ ok: true, emailCodes: MAIL_ON, ai: AI_ON, mode: LIVE ? "live" : "test", ecocash: EIP_ON ? (EIP_SANDBOX ? "sandbox" : "live") : "paynow" }));
 
 // Works out what an order really costs from the shop's own prices, not from the browser.
 async function priceOrder(orderId) {

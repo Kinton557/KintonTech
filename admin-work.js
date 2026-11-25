@@ -71,18 +71,37 @@
   } });
 
   /* ---------------- KintonTech Labs ---------------- */
-  var L_STAGE = ['planned', 'building', 'testing', 'released', 'paused'], L_TYPE = ['Product', 'App', 'Experiment', 'Tool'];
+  var L_STAGE = ['planned', 'building', 'testing', 'released', 'paused'], L_TYPE = ['Product', 'App', 'Website', 'Experiment', 'Tool'];
   function roadToText(r) { return (r || []).map(function (x) { return (x.done ? '[x] ' : '[ ] ') + x.t; }).join('\n'); }
   function textToRoad(t) { return String(t || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 30).map(function (l) { var m = /^\[( |x|X)\]\s*(.*)$/.exec(l); return { t: (m ? m[2] : l).slice(0, 120), done: !!(m && m[1].toLowerCase() === 'x') }; }).filter(function (x) { return x.t; }); }
   function relToText(r) { return (r || []).map(function (x) { return [x.v, x.date, x.notes].join(' | '); }).join('\n'); }
   function textToRel(t) { return String(t || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 20).map(function (l) { var p = l.split('|').map(function (s) { return s.trim(); }); return { v: (p[0] || '').slice(0, 20), date: (p[1] || '').slice(0, 20), notes: (p[2] || '').slice(0, 200) }; }).filter(function (x) { return x.v; }); }
+  function labImage(file) {
+    return new Promise(function (res, rej) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return rej(new Error('Use a JPG, PNG or WebP image.'));
+      if (file.size > 8 * 1024 * 1024) return rej(new Error('That image is over 8 MB. Choose a smaller one.'));
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var k = Math.min(1, 800 / img.width), c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        var q = 0.8, out = c.toDataURL('image/jpeg', q);
+        while (out.length > 220000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+        out.length > 220000 ? rej(new Error('That image is too detailed to store. Try a simpler one.')) : res(out);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('That file could not be read as an image.')); };
+      img.src = url;
+    });
+  }
   KT.labsRoadPct = function (l) { var r = l.roadmap || []; return r.length ? Math.round(r.filter(function (x) { return x.done; }).length * 100 / r.length) : 0; };
 
   KT.registerAdmin({ key: 'labs', title: 'KintonTech Labs', order: 50, perm: 'labs', render: function (panel, ctx) {
     var list = [];
     function load() { Store.col('labs').list().then(function (l) { list = l; paint(); }).catch(ctx.fail); }
+    function missingOurs() { var have = list.map(function (l) { return String(l.name || '').toLowerCase(); }); return Store.ourProjects.some(function (p) { return have.indexOf(p.name.toLowerCase()) < 0; }); }
     function paint() {
-      panel.innerHTML = '<p class="muted" style="margin-top:0">Your own products and experiments. Items marked public appear on the <a href="labs.html" target="_blank" rel="noopener">Labs page</a>.</p><div class="cta-row" style="margin-bottom:1.2rem"><button class="btn" type="button" id="new-lab">Add to Labs</button>' + (list.length ? '' : '<button class="btn btn-line" type="button" id="seed-labs">Load starter ideas</button>') + '</div><div id="lab-form"></div><div class="list">' +
+      panel.innerHTML = '<p class="muted" style="margin-top:0">Your own products and experiments. Items marked public appear on the <a href="labs.html" target="_blank" rel="noopener">Labs page</a>.</p><div class="cta-row" style="margin-bottom:1.2rem"><button class="btn" type="button" id="new-lab">Add to Labs</button>' + (list.length ? '' : '<button class="btn btn-line" type="button" id="seed-labs">Load starter ideas</button>') + (missingOurs() ? '<button class="btn btn-line" type="button" id="seed-ours">Add our projects</button>' : '') + '</div><div id="lab-form"></div><div class="list">' +
         (list.length ? list.map(function (l) {
           return '<article class="row-card"><header><h3>' + E(l.name) + '</h3><span>' + KT.badge(l.stage) + ' ' + KT.badge(l.type || 'Product', '') + (l.public ? '' : ' ' + KT.badge('Private', 'cancelled')) + '</span></header>' +
             '<div class="meta">' + (l.version ? 'Version ' + E(l.version) + ' &middot; ' : '') + (l.team ? 'Team: ' + E(l.team) + ' &middot; ' : '') + (l.url ? link(l.url, 'Open link') : '') + '</div><p style="margin:.5rem 0">' + E(l.summary) + '</p>' +
@@ -90,6 +109,7 @@
             '<div class="row-actions"><button class="btn btn-line btn-sm" type="button" data-edit="' + E(l.id) + '">Edit</button><button class="link-btn danger" type="button" data-del="' + E(l.id) + '">Delete</button></div></article>'; }).join('')
           : '<div class="empty"><h3>Nothing in Labs yet</h3><p>Add your first product or experiment, or load the starter ideas and edit them.</p></div>') + '</div>';
       $('#new-lab').addEventListener('click', function () { form(null); });
+      var so = $('#seed-ours'); if (so) so.addEventListener('click', function () { so.disabled = true; Store.seedProjects().then(function (r) { Store.log('Added Kinton projects to Labs'); KT.toast(r.added + ' added' + (r.skipped ? ', ' + r.skipped + ' already there' : '')); load(); }).catch(ctx.fail); });
       var sd = $('#seed-labs'); if (sd) sd.addEventListener('click', function () { sd.disabled = true; Store.seedLabs().then(function () { Store.log('Loaded starter Labs ideas'); load(); }).catch(ctx.fail); });
       panel.onclick = function (e) {
         var t = e.target.closest('button'); if (!t) return; var l = list.filter(function (x) { return x.id === (t.dataset.edit || t.dataset.del); })[0];
@@ -97,23 +117,28 @@
       };
     }
     function form(l) {
-      l = l || { name: '', type: 'Product', stage: 'planned', version: '', url: '', public: true, team: '', summary: '', roadmap: [], releases: [] };
-      var box = $('#lab-form');
+      l = l || { name: '', type: 'Product', stage: 'planned', version: '', url: '', public: true, team: '', summary: '', image: '', roadmap: [], releases: [] };
+      var box = $('#lab-form'), image = l.image || '';
       box.innerHTML = '<form class="panel" id="lf" style="margin-bottom:1.5rem" novalidate><h2 style="font-size:1.3rem">' + (l.id ? 'Edit' : 'New') + ' Labs item</h2><div class="form-grid">' +
         '<div class="field"><label for="l-name">Name</label><input id="l-name" type="text" maxlength="80" value="' + E(l.name) + '" required></div><div class="field"><label for="l-type">Type</label><select id="l-type">' + L_TYPE.map(function (t) { return '<option' + (t === l.type ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div>' +
         '<div class="field"><label for="l-stage">Stage</label><select id="l-stage">' + L_STAGE.map(function (s) { return '<option' + (s === l.stage ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div><div class="field"><label for="l-ver">Current version</label><input id="l-ver" type="text" maxlength="20" value="' + E(l.version) + '" placeholder="e.g. 0.1"></div>' +
         '<div class="field"><label for="l-url">Link (https)</label><input id="l-url" type="url" maxlength="300" value="' + E(l.url) + '"></div><div class="field"><label for="l-team">Product team</label><input id="l-team" type="text" maxlength="150" value="' + E(l.team) + '" placeholder="Names, separated by commas"></div>' +
+        '<div class="field full"><label for="l-file">Screenshot or picture (optional)</label><div id="l-prev" style="max-width:16rem;margin:.3rem 0"></div><input id="l-file" type="file" accept="image/jpeg,image/png,image/webp"><div class="hint">Shown at the top of its card on the Labs page. Resized automatically. <button class="link-btn danger" type="button" id="l-noimg">Remove picture</button></div></div>' +
         '<div class="field full"><label class="check"><input type="checkbox" id="l-pub"' + (l.public ? ' checked' : '') + '> Show on the public Labs page</label></div>' +
         '<div class="field full"><label for="l-sum">Summary</label><textarea id="l-sum" maxlength="300" style="min-height:5rem" required>' + E(l.summary) + '</textarea></div>' +
         '<div class="field full"><label for="l-road">Roadmap</label><textarea id="l-road" maxlength="2000" style="min-height:7rem">' + E(roadToText(l.roadmap)) + '</textarea><div class="hint">One item per line. Start with [x] when it is done, or [ ] when it is not.</div></div>' +
         '<div class="field full"><label for="l-rel">Releases</label><textarea id="l-rel" maxlength="2000" style="min-height:5rem" placeholder="v0.1 | 2026-11-01 | First test version">' + E(relToText(l.releases)) + '</textarea><div class="hint">One per line: version | date | what changed.</div></div></div>' +
         '<div class="cta-row"><button class="btn" type="submit">Save</button><button class="btn btn-line" type="button" id="l-cancel">Cancel</button></div><div id="l-msg" class="msg" role="alert"></div></form>';
+      function prev() { var u = KT.safeImg(image); $('#l-prev').innerHTML = u ? '<img src="' + E(u) + '" alt="Preview" style="width:100%;border-radius:6px">' : ''; }
+      prev();
+      $('#l-noimg').addEventListener('click', function () { image = ''; $('#l-file').value = ''; prev(); });
+      $('#l-file').addEventListener('change', function (e) { var f = e.target.files[0]; if (!f) return; labImage(f).then(function (d) { image = d; prev(); say($('#l-msg'), ''); }).catch(function (err) { e.target.value = ''; say($('#l-msg'), err.message); }); });
       $('#l-cancel').addEventListener('click', function () { box.innerHTML = ''; });
       $('#lf').addEventListener('submit', function (e) {
         e.preventDefault(); var msg = $('#l-msg'), name = $('#l-name').value.trim(), sum = $('#l-sum').value.trim(), url = $('#l-url').value.trim();
         if (name.length < 2) return say(msg, 'Give it a name.'); if (sum.length < 5) return say(msg, 'Add a short summary.');
         if (url && !/^https:\/\/[^\s"'<>]+$/i.test(url)) return say(msg, 'The link must start with https://');
-        var doc = { id: l.id, name: name.slice(0, 80), type: $('#l-type').value, stage: $('#l-stage').value, version: $('#l-ver').value.trim().slice(0, 20), url: url, team: $('#l-team').value.trim().slice(0, 150), public: $('#l-pub').checked, summary: sum.slice(0, 300), roadmap: textToRoad($('#l-road').value), releases: textToRel($('#l-rel').value) };
+        var doc = { id: l.id, name: name.slice(0, 80), type: $('#l-type').value, stage: $('#l-stage').value, version: $('#l-ver').value.trim().slice(0, 20), url: url, team: $('#l-team').value.trim().slice(0, 150), public: $('#l-pub').checked, summary: sum.slice(0, 300), image: image, roadmap: textToRoad($('#l-road').value), releases: textToRel($('#l-rel').value) };
         var btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
         Store.col('labs').save(doc).then(function () { Store.log((l.id ? 'Updated' : 'Added') + ' Labs item "' + doc.name + '"'); KT.toast('Saved'); load(); }).catch(function (err) { say(msg, err.message); btn.disabled = false; });
       });

@@ -24,6 +24,7 @@
     u = String(u || '');
     if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)) return u;
     if (/^https:\/\/[^\s"'<>]+$/i.test(u)) return u;
+    if (/^assets\/[\w\-\/]+\.(jpe?g|png|webp)$/i.test(u)) return u;
     return '';
   }
   function fmtDate(ms) { return ms ? new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : ''; }
@@ -316,6 +317,17 @@
         afterAuthRedirect(u, role === 'admin');
       }).catch(function (err) { say(msg, err.message); cap.reset(); btn.disabled = false; });
     });
+    var gb = $('#google-btn');
+    if (gb) gb.addEventListener('click', function () {
+      say(msg, ''); gb.disabled = true;
+      var role = form.elements.role.value;
+      Store.signInGoogle().then(function (u) {
+        if (role === 'admin' && !u.isAdmin) {
+          return Store.signOut().then(function () { gb.disabled = false; say(msg, 'This Google account does not have staff access. Choose Customer to continue, or ask an admin to add you.'); });
+        }
+        afterAuthRedirect(u, role === 'admin');
+      }).catch(function (err) { say(msg, err.message); gb.disabled = false; });
+    });
     $('#forgot').addEventListener('click', function () {
       var email = $('#email').value.trim();
       if (!email) return say(msg, 'Type your email above first, then tap "Forgot password?".');
@@ -334,20 +346,33 @@
       var name = $('#name').value.trim(), email = $('#email').value.trim(), pw = $('#password').value, wantAdmin = form.elements.role.value === 'admin';
       if (name.length < 2) return say(msg, 'Enter your full name.');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say(msg, 'Enter a valid email address.');
+      var phone = normPhone($('#phone').value), city = $('#city').value.trim(), address = $('#address').value.trim(), business = $('#business').value.trim();
+      if (!phone) return say(msg, 'Enter a phone number we can reach you on, for example 077 123 4567.');
+      if (city.length < 2) return say(msg, 'Enter your city or town.');
       if (pw.length < 8) return say(msg, 'Your password needs at least 8 characters.');
       if (!$('#agree').checked) return say(msg, 'Please agree to the terms and privacy notice to continue.');
       if (!needCaptcha(cap, msg)) return;
       var btn = form.querySelector('button[type=submit]'); btn.disabled = true;
-      Store.signUp(name.slice(0, 80), email, pw, wantAdmin).then(function (u) {
+      Store.signUp(name.slice(0, 80), email, pw, wantAdmin, { phone: phone, city: city.slice(0, 60), address: address.slice(0, 160), business: business.slice(0, 80) }).then(function (u) {
         var next = safeNext(param('next'));
-        location.href = u.isAdmin ? 'admin.html' : (wantAdmin ? 'account.html' : (next || 'account.html'));
+        location.href = u.isAdmin ? 'admin.html' : (wantAdmin ? 'account.html?verify=1' : (next || 'account.html?verify=1'));
       }).catch(function (err) { say(msg, err.message); cap.reset(); btn.disabled = false; });
+    });
+    var gb = $('#google-btn');
+    if (gb) gb.addEventListener('click', function () {
+      say(msg, '');
+      if (form.elements.role.value === 'admin') return say(msg, 'Staff requests need an email sign-up. Choose Customer to continue with Google.');
+      if (!$('#agree').checked) return say(msg, 'Please agree to the terms and privacy notice to continue.');
+      gb.disabled = true;
+      Store.signInGoogle().then(function (u) { location.href = u.isAdmin ? 'admin.html' : (safeNext(param('next')) || 'account.html'); })
+        .catch(function (err) { say(msg, err.message); gb.disabled = false; });
     });
     var si = $('#to-signin'); if (si && param('next')) si.href = 'signin.html?next=' + encodeURIComponent(param('next'));
   };
 
   pages.account = function () {
     var root = $('#account-root'), u = Store.user;
+    if (u) renderProfile(u);
     if (!u) { root.innerHTML = '<div class="empty"><h3>You are signed out</h3><p>Sign in to see your orders.</p><a class="btn" href="signin.html?next=account.html">Sign in</a></div>'; return; }
     $('#acc-name').textContent = u.name || u.email;
     $('#acc-email').textContent = u.email;
@@ -405,7 +430,8 @@
       box.innerHTML = ls.length ? ls.map(function (l) {
         var road = l.roadmap || [], done = road.filter(function (r) { return r.done; }).length, p = road.length ? Math.round(done * 100 / road.length) : 0;
         var rel = (l.releases || []).slice(0, 2).map(function (r) { return '<li><strong>' + esc(r.v) + '</strong>' + (r.date ? ' <span class="meta">' + esc(r.date) + '</span>' : '') + (r.notes ? '<br>' + esc(r.notes) : '') + '</li>'; }).join('');
-        return '<article class="card lab"><div class="card-body"><span class="cat">' + esc(l.type || 'Product') + '</span><h3>' + esc(l.name) + ' <span class="badge ' + esc(l.stage) + '">' + esc(l.stage) + '</span></h3><p style="-webkit-line-clamp:unset;display:block">' + esc(l.summary) + '</p>' +
+        var pic = safeImg(l.image);
+        return '<article class="card lab">' + (pic ? '<div class="card-img lab-img"><img src="' + esc(pic) + '" alt="' + esc(l.name) + ' preview" loading="lazy"></div>' : '') + '<div class="card-body"><span class="cat">' + esc(l.type || 'Product') + '</span><h3>' + esc(l.name) + ' <span class="badge ' + esc(l.stage) + '">' + esc(l.stage) + '</span></h3><p style="-webkit-line-clamp:unset;display:block">' + esc(l.summary) + '</p>' +
           (road.length ? '<div class="bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '" aria-label="Roadmap progress"><div class="bar-fill" style="width:' + p + '%"></div></div><div class="meta">Roadmap ' + p + '% done</div>' : '') +
           (l.team ? '<div class="meta">Team: ' + esc(l.team) + '</div>' : '') + (l.version ? '<div class="meta">Version ' + esc(l.version) + '</div>' : '') +
           (rel ? '<ul class="plain rel">' + rel + '</ul>' : '') +
@@ -433,6 +459,138 @@
     });
   };
 
+
+
+  /* ---------- phone helper ---------- */
+  function normPhone(v) {
+    var p = String(v || '').replace(/[\s\-().]/g, '');
+    if (/^0\d{8,10}$/.test(p)) p = '+263' + p.slice(1);
+    else if (/^263\d{8,10}$/.test(p)) p = '+' + p;
+    else if (/^7\d{8}$/.test(p)) p = '+263' + p;
+    return /^\+\d{9,14}$/.test(p) ? p : '';
+  }
+
+  /* ---------- account: details + email verification ---------- */
+  function renderProfile(u) {
+    var box = $('#profile-box'); if (!box) return;
+    var h = '';
+    if (!u.emailVerified) {
+      h += '<section class="panel verify-card" id="verify-card" style="margin:0 0 1.5rem"><h2 style="font-size:1.2rem;margin-bottom:.2em">Verify your email</h2>' +
+        '<p class="muted" style="margin-top:0">We will send a 6-digit code to <strong>' + esc(u.email) + '</strong>. It works for 10 minutes.</p>' +
+        '<div id="v-step1" class="cta-row"><button class="btn" type="button" id="v-send">Send me a code</button><button class="btn btn-line" type="button" id="v-link">Email me a link instead</button></div>' +
+        '<div id="v-step2" hidden><div class="field" style="margin-bottom:.8rem"><label for="v-code">Enter the 6-digit code</label><input class="code-in" id="v-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></div>' +
+        '<div class="cta-row"><button class="btn" type="button" id="v-check">Verify</button><button class="btn btn-line" type="button" id="v-resend">Send a new code</button></div></div>' +
+        '<div id="v-msg" class="msg" role="alert"></div></section>';
+    } else {
+      h += '<p style="margin:0 0 1rem"><span class="badge-ok">&#10003; Email verified</span></p>';
+    }
+    if (u.phone && normPhone(u.phone)) {
+      if (u.phoneVerified) {
+        h += '<p style="margin:0 0 1rem"><span class="badge-ok">&#10003; Phone verified (' + esc(u.phone) + ')</span></p>';
+      } else {
+        h += '<section class="panel verify-card" id="phone-card" style="margin:0 0 1.5rem"><h2 style="font-size:1.2rem;margin-bottom:.2em">Verify your phone</h2>' +
+          '<p class="muted" style="margin-top:0">We will text a 6-digit code to <strong>' + esc(u.phone) + '</strong>. Standard SMS rates may apply on your network.</p>' +
+          '<div id="ph-step1" class="cta-row"><button class="btn" type="button" id="ph-send">Text me a code</button></div>' +
+          '<div id="ph-step2" hidden><div class="field" style="margin-bottom:.8rem"><label for="ph-code">Enter the 6-digit code</label><input class="code-in" id="ph-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></div>' +
+          '<div class="cta-row"><button class="btn" type="button" id="ph-check">Verify</button><button class="btn btn-line" type="button" id="ph-resend">Send a new code</button></div></div>' +
+          '<div id="ph-msg" class="msg" role="alert"></div></section>';
+      }
+    }
+    h += '<form class="panel" id="profile-form" novalidate style="margin:0 0 2rem"><h2 style="font-size:1.2rem;margin-bottom:.2em">Your details</h2>' +
+      (!u.phone ? '<p class="muted" style="margin-top:0">Add your phone number so we can reach you about your orders.</p>' : '') +
+      '<div class="form-grid"><div class="field"><label for="p-name">Full name</label><input id="p-name" maxlength="80" value="' + esc(u.name) + '" required></div>' +
+      '<div class="field"><label for="p-phone">Phone / WhatsApp</label><input id="p-phone" type="tel" maxlength="20" value="' + esc(u.phone) + '" placeholder="077 123 4567"></div>' +
+      '<div class="field"><label for="p-city">City or town</label><input id="p-city" maxlength="60" value="' + esc(u.city) + '"></div>' +
+      '<div class="field"><label for="p-address">Address</label><input id="p-address" maxlength="160" value="' + esc(u.address) + '" placeholder="Street and suburb"></div>' +
+      '<div class="field full"><label for="p-business">Business or school</label><input id="p-business" maxlength="80" value="' + esc(u.business) + '"></div></div>' +
+      '<button class="btn" type="submit">Save details</button><div id="p-msg" class="msg" role="alert"></div></form>';
+    box.innerHTML = h;
+
+    $('#profile-form').addEventListener('submit', function (e) {
+      e.preventDefault(); var m = $('#p-msg'); say(m, '');
+      var name = $('#p-name').value.trim(), raw = $('#p-phone').value.trim(), phone = raw ? normPhone(raw) : '';
+      if (name.length < 2) return say(m, 'Enter your full name.');
+      if (raw && !phone) return say(m, 'That phone number does not look right. Try 077 123 4567.');
+      Store.updateProfile({ name: name, phone: phone, city: $('#p-city').value.trim(), address: $('#p-address').value.trim(), business: $('#p-business').value.trim() })
+        .then(function () { say(m, 'Saved.', 'ok'); toast('Details saved'); }).catch(function (err) { say(m, err.message); });
+    });
+
+    var pcard = $('#phone-card');
+    if (pcard) {
+      var pm = $('#ph-msg'), pcool = 0, ptimer = 0, pnum = normPhone(u.phone);
+      var pcooldown = function () { clearInterval(ptimer); pcool = 60; var b = $('#ph-resend'); b.disabled = true; ptimer = setInterval(function () { pcool--; b.textContent = pcool > 0 ? 'Send a new code (' + pcool + 's)' : 'Send a new code'; if (pcool <= 0) { b.disabled = false; clearInterval(ptimer); } }, 1000); };
+      var psend = function (btn) {
+        say(pm, 'Sending your code...', 'ok'); if (btn) btn.disabled = true;
+        Store.sendPhoneOtp(pnum).then(function (r) {
+          if (r && r.already) { say(pm, 'Your phone is already verified.', 'ok'); return Store.refreshVerified().then(function () { renderProfile(Store.user); }); }
+          say(pm, (r && r.demo) ? 'Demo mode: use the code 123456.' : 'Code sent by SMS. It can take a minute to arrive.', 'ok');
+          $('#ph-step1').hidden = true; $('#ph-step2').hidden = false; $('#ph-code').focus(); pcooldown();
+        }).catch(function (err) { say(pm, err.message); if (btn) btn.disabled = false; });
+      };
+      $('#ph-send').addEventListener('click', function () { psend(this); });
+      $('#ph-resend').addEventListener('click', function () { psend(null); });
+      $('#ph-code').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); if (this.value.length === 6) $('#ph-check').click(); });
+      $('#ph-check').addEventListener('click', function () {
+        var code = $('#ph-code').value; if (code.length !== 6) return say(pm, 'Enter all 6 digits.');
+        var b = this; b.disabled = true; say(pm, '');
+        Store.verifyPhoneOtp(code, pnum).then(function () { toast('Phone verified'); renderProfile(Store.user); }).catch(function (err) { say(pm, err.message); b.disabled = false; });
+      });
+    }
+
+    var card = $('#verify-card'); if (!card) return;
+    var vm = $('#v-msg'), cool = 0, timer = 0;
+    function step2() { $('#v-step1').hidden = true; $('#v-step2').hidden = false; $('#v-code').focus(); }
+    function cooldown() { clearInterval(timer); cool = 60; var b = $('#v-resend'); b.disabled = true; timer = setInterval(function () { cool--; b.textContent = cool > 0 ? 'Send a new code (' + cool + 's)' : 'Send a new code'; if (cool <= 0) { b.disabled = false; clearInterval(timer); } }, 1000); }
+    function send(btn) {
+      say(vm, 'Sending your code... this can take up to a minute the first time.', 'ok'); if (btn) btn.disabled = true;
+      return Store.sendEmailOtp().then(function (r) {
+        if (r && r.already) { say(vm, 'Your email is already verified.', 'ok'); return Store.refreshVerified().then(function () { renderProfile(Store.user); }); }
+        say(vm, (r && r.demo) ? 'Demo mode: use the code 123456.' : 'Code sent. Check your inbox (and spam).', 'ok'); step2(); cooldown();
+      }).catch(function (err) { say(vm, err.message); if (btn) btn.disabled = false; });
+    }
+    $('#v-send').addEventListener('click', function () { send(this); });
+    $('#v-resend').addEventListener('click', function () { send(null); });
+    $('#v-link').addEventListener('click', function () {
+      var b = this; b.disabled = true;
+      Store.sendVerifyLink().then(function () { say(vm, 'Link sent to ' + u.email + '. Open it, then come back and reload this page.', 'ok'); }).catch(function (err) { say(vm, err.message); b.disabled = false; });
+    });
+    $('#v-code').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); if (this.value.length === 6) $('#v-check').click(); });
+    $('#v-check').addEventListener('click', function () {
+      var code = $('#v-code').value; if (code.length !== 6) return say(vm, 'Enter all 6 digits.');
+      var b = this; b.disabled = true; say(vm, '');
+      Store.verifyEmailOtp(code).then(function () { toast('Email verified'); renderProfile(Store.user); }).catch(function (err) { say(vm, err.message); b.disabled = false; });
+    });
+    // Arriving from sign-up: send the first code automatically, once.
+    if (param('verify') === '1') { try { if (sessionStorage.getItem('kt_otp_auto') === u.uid) return; sessionStorage.setItem('kt_otp_auto', u.uid); } catch (e) {} send($('#v-send')); }
+  }
+
+  /* ---------- team (About + Home), edited in Admin > Team ---------- */
+  function initials(n) { return String(n || '?').trim().split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase(); }
+  function applyTeam() {
+    var box = $('#team-box'); if (!box) return;
+    Store.getTeam().then(function (t) {
+      var list = ((t || {}).members || []).filter(function (m) { return m && m.name; });
+      if (!list.length) return; // nothing saved yet: keep the built-in markup
+      box.className = 'team-grid'; box.removeAttribute('style');
+      box.innerHTML = list.map(function (m) {
+        var pic = safeImg(m.photo);
+        return '<article class="member"><div class="member-photo">' + (pic ? '<img src="' + esc(pic) + '" alt="' + esc(m.name) + '" loading="lazy">' : '<span aria-hidden="true">' + esc(initials(m.name)) + '</span>') + '</div>' +
+          '<div class="member-body"><h3>' + esc(m.name) + '</h3>' + (m.role ? '<p class="member-role">' + esc(m.role) + '</p>' : '') + (m.bio ? '<p class="member-bio">' + esc(m.bio) + '</p>' : '') + '</div></article>';
+      }).join('');
+      var org = $('#org-box');
+      if (org) {
+        var tiers = {};
+        list.forEach(function (m) { var t = [1, 2, 3].indexOf(+m.tier) > -1 ? +m.tier : 1; (tiers[t] = tiers[t] || []).push(m); });
+        org.innerHTML = [1, 2, 3].filter(function (t) { return tiers[t]; }).map(function (t) {
+          return '<div class="org-tier" data-tier="' + t + '">' + tiers[t].map(function (m) {
+            var pic = safeImg(m.photo);
+            return '<div class="org-node"><span class="org-av">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : esc(initials(m.name))) + '</span><b>' + esc(m.name) + '</b>' + (m.role ? '<small>' + esc(m.role) + '</small>' : '') + '</div>';
+          }).join('') + '</div>';
+        }).join('');
+      }
+    }).catch(function () {});
+  }
+
   /* ---------- boot ---------- */
   window.KT = { $: $, $$: $$, esc: esc, money: money, priceHTML: priceHTML, safeImg: safeImg, icon: icon, fmtDate: fmtDate, waLink: waLink, toast: toast, say: say, pages: pages };
   // Deferred scripts run while readyState is "interactive"; DOMContentLoaded fires only after ALL of them have run.
@@ -440,6 +598,7 @@
   Promise.all([Store.ready, domReady]).then(function () {
     initHeader();
     applyContent();
+    applyTeam();
     var fn = pages[document.body.getAttribute('data-page')];
     if (fn) fn();
   });
