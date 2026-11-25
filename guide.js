@@ -1,7 +1,8 @@
 /*
-  Kinton Guide - a free, built-in help and navigation assistant.
-  No server, no AI key, no cost. It matches keywords to ready-made answers,
-  so it can never invent facts. To change an answer, edit the INTENTS list below.
+  Kinton Guide - an AI help and navigation assistant.
+  Every question is answered by Gemini through the Kinton server (/ai/chat).
+  What the AI knows about Kinton lives in AI_SYSTEM in server.js.
+  Voice commands ("go to cart", "scroll down", "click 3"...) still run on the page itself.
 */
 (function () {
   'use strict';
@@ -13,91 +14,20 @@
   var WA_TXT = CFG.whatsappDisplay || '+263 77 561 0805';
   var WA_LINK = 'https://wa.me/' + WA;
 
-  /* ---------- Answers. Each: keywords (any match), reply text, optional links ---------- */
-  var INTENTS = [
-    { id: 'hello', k: ['hi', 'hello', 'hey', 'hie', 'howdy', 'morning', 'afternoon', 'evening'],
-      a: 'Hello! I can help you find your way around Kinton Technologies. What are you looking for?' },
-    { id: 'services', k: ['service', 'services', 'what do you do', 'what you do', 'offer', 'build', 'help me with'],
-      a: 'We build websites, mobile apps, brand identities (logos, colours, social media kits), and we help with domains and hosting.',
-      l: [['See services', 'services.html'], ['Browse the shop', 'shop.html']] },
-    { id: 'website', k: ['website', 'web site', 'web', 'online store', 'online shop', 'ecommerce', 'e-commerce', 'landing page', 'portfolio site'],
-      a: 'We build business sites, portfolios and online shops that work well on phones, load quickly and let customers contact you on WhatsApp in one tap.',
-      l: [['See website packages', 'shop.html?cat=Websites'], ['Get a quote', 'contact.html']] },
-    { id: 'app', k: ['app', 'apps', 'mobile app', 'android', 'ios', 'iphone', 'application'],
-      a: 'We build Android and iOS apps. First we write down what the app should do, then we quote a fixed price.',
-      l: [['Ask about an app', 'shop.html?cat=Apps'], ['Get a quote', 'contact.html']] },
-    { id: 'brand', k: ['brand', 'branding', 'logo', 'logos', 'colours', 'colors', 'identity', 'social media kit', 'design'],
-      a: 'We design logos plus the pieces around them: colours, fonts and social media templates, so your business looks consistent online and in print.',
-      l: [['See branding packs', 'shop.html?cat=Branding'], ['Get a quote', 'contact.html']] },
-    { id: 'domain', k: ['domain', 'hosting', 'host', 'co.zw', '.com', 'dns', 'email address'],
-      a: 'We help you choose, register and connect a domain name and get your site online. Domain and hosting fees are paid to the provider.',
-      l: [['See add-ons', 'shop.html?cat=Add-ons']] },
-    { id: 'price', k: ['price', 'prices', 'pricing', 'cost', 'how much', 'rate', 'rates', 'cheap', 'afford', 'quote', 'package', 'packages', 'budget'],
-      a: 'Prices are listed on each package in the shop. For something custom, send us a message and we will give you a quote. Placing an order is only a request. Nothing is charged until we agree the scope and price with you.',
-      l: [['Browse packages', 'shop.html'], ['Get a quote', 'contact.html']] },
-    { id: 'order', k: ['order', 'buy', 'purchase', 'how do i start', 'get started', 'start a project', 'cart', 'checkout'],
-      a: 'It is simple: 1) Add a package to your cart, or message us if you need something custom. 2) Place your order. We contact you on WhatsApp to agree scope, price and timeline. You pay nothing at this step. 3) We build, you review and ask for changes, then we launch together.',
-      l: [['Open the shop', 'shop.html'], ['View cart', 'cart.html']] },
-    { id: 'pay', k: ['pay', 'payment', 'ecocash', 'bank', 'cash', 'invoice', 'refund', 'deposit', 'usd', 'zig'],
-      a: 'We agree the payment method with you on WhatsApp before work starts (for example cash, EcoCash or bank). The website records orders and invoices but does not take card payments itself.',
-      l: [['Chat on WhatsApp', WA_LINK, true]] },
-    { id: 'time', k: ['how long', 'timeline', 'deadline', 'delivery', 'turnaround', 'days', 'weeks', 'when will'],
-      a: 'Timelines depend on the project. We confirm the scope, price and timeline with you before work begins. Tell us what you need and we will give you a realistic date.',
-      l: [['Get a quote', 'contact.html'], ['Chat on WhatsApp', WA_LINK, true]] },
-    { id: 'contact', k: ['contact', 'reach', 'phone', 'call', 'email', 'message', 'talk', 'speak', 'whatsapp', 'number', 'human', 'person', 'agent'],
-      a: 'You can reach us on WhatsApp at ' + WA_TXT + ', or send a message through the contact form. We reply on the email or phone number you give us.',
-      l: [['Chat on WhatsApp', WA_LINK, true], ['Contact form', 'contact.html']] },
-    { id: 'where', k: ['where', 'location', 'address', 'kadoma', 'zimbabwe', 'office', 'visit', 'based'],
-      a: 'We are based in Kadoma, Zimbabwe, and we build for businesses and organisations all over the country.',
-      l: [['Contact us', 'contact.html']] },
-    { id: 'about', k: ['about', 'who are you', 'who is', 'founder', 'ceo', 'team', 'company', 'tanaka', 'denzel', 'mangani', 'mujikijera'],
-      a: 'Kinton Technologies is a software and design studio in Kadoma, Zimbabwe. Founder and CEO: Tanaka Shanon Mujikijera. Co-founder: Denzel Mangani. We keep the team small so you always know who is working on your project.',
-      l: [['About us', 'about.html']] },
-    { id: 'labs', k: ['labs', 'lab', 'product', 'products', 'experiment', 'kintontech labs', 'roadmap', 'release'],
-      a: 'KintonTech Labs is where we build and test our own products and ideas. Some are ideas, some are in progress, and some are ready to use.',
-      l: [['Visit Labs', 'labs.html']] },
-    { id: 'account', k: ['account', 'sign in', 'signin', 'login', 'log in', 'sign up', 'signup', 'register', 'create account', 'password', 'forgot'],
-      a: 'You can create a free account to place orders and track them. If you forgot your password, use the reset link on the sign-in page.',
-      l: [['Sign in', 'signin.html'], ['Create account', 'signup.html']] },
-    { id: 'support', k: ['support', 'problem', 'issue', 'not working', 'broken', 'complaint', 'ticket', 'bug'],
-      a: 'Sorry you are having trouble. Sign in to open a support ticket from your account, or message us on WhatsApp and we will help.',
-      l: [['My account', 'account.html'], ['Chat on WhatsApp', WA_LINK, true]] },
-    { id: 'legal', k: ['terms', 'privacy', 'policy', 'data', 'conditions', 'legal'],
-      a: 'You can read how we work and how we handle your information in these pages.',
-      l: [['Terms', 'terms.html'], ['Privacy', 'privacy.html']] },
-    { id: 'thanks', k: ['thanks', 'thank you', 'thank', 'ok thanks', 'cool', 'great', 'nice', 'appreciate'],
-      a: 'You are welcome! Anything else I can help you find?' },
-    { id: 'bye', k: ['bye', 'goodbye', 'see you', 'cheers'],
-      a: 'Goodbye! If you need us, we are one WhatsApp message away.' }
-  ];
-
   var QUICK = [
-    ['What do you build?', 'services'],
-    ['How do I order?', 'order'],
-    ['Prices', 'price'],
-    ['Contact us', 'contact']
+    ['What do you build?'],
+    ['How do I order?'],
+    ['How much does a website cost?'],
+    ['How can I pay?']
   ];
 
   var FALLBACK = {
-    a: 'I am not sure about that one. A real person can answer it best. Message us on WhatsApp and we will help.',
+    a: 'Sorry, I could not get an answer just now. Please try again in a moment, or message us on WhatsApp and we will help.',
     l: [['Chat on WhatsApp', WA_LINK, true], ['Contact form', 'contact.html']]
   };
 
-  /* ---------- Matching ---------- */
+  /* ---------- Text helpers ---------- */
   function norm(s) { return ' ' + String(s).toLowerCase().replace(/[^a-z0-9.\s-]/g, ' ').replace(/\s+/g, ' ').trim() + ' '; }
-
-  function find(text) {
-    var t = norm(text), best = null, bestScore = 0;
-    INTENTS.forEach(function (it) {
-      var score = 0;
-      it.k.forEach(function (kw) {
-        var n = norm(kw);
-        if (t.indexOf(n) !== -1) score += n.trim().split(' ').length + (n.length > 8 ? 1 : 0);
-      });
-      if (score > bestScore) { best = it; bestScore = score; }
-    });
-    return best;
-  }
 
   /* ---------- Voice commands: "go to cart", "open shop", "go back" ... ---------- */
   var PAGES = [
@@ -152,7 +82,7 @@
       if (el) { var said = fieldOrClick(el); return { say: said, delay: 500, run: function () { activate(el); } }; }
       if (n || /\b(button|link|tab)\b/.test(m[1]) || !has(t, ['shop', 'services', 'labs', 'about', 'contact', 'home', 'cart'])) return { say: 'I could not find ' + (n ? 'number ' + n : m[1]) + ' on this screen. Say show numbers to see what you can click.' };
     }
-    if (VERB.test(t.trim())) {
+    if (VERB.test(t.trim()) && t.trim().split(' ').length <= 6) {
       for (var i = 0; i < PAGES.length; i++) {
         if (has(t, PAGES[i][0])) {
           var url = PAGES[i][1], name = PAGES[i][2];
@@ -263,7 +193,7 @@
       var c = document.createElement('div'); c.className = 'kg-chips';
       chips.forEach(function (x) {
         var b = document.createElement('button'); b.type = 'button'; b.className = 'kg-chip'; b.textContent = x[0];
-        b.addEventListener('click', function () { ask(x[0], x[1]); });
+        b.addEventListener('click', function () { ask(x[0]); });
         c.appendChild(b);
       });
       d.appendChild(c);
@@ -279,36 +209,73 @@
   function ask(label, id, viaVoice) {
     add('kg-me', label);
     stopSpeak();
-    var cmd = id ? null : command(label);
+    var cmd = command(label);
     if (cmd) {
       reply(cmd.say, null, null, viaVoice, cmd.silent);
       if (cmd.run) setTimeout(cmd.run, cmd.delay || 1100);
       return;
     }
-    var it = id ? INTENTS.filter(function (x) { return x.id === id; })[0] : find(label);
-    setTimeout(function () {
-      if (it) reply(it.a, it.l, null, viaVoice);
-      else if (AI_URL && label.length > 2) askAI(label, viaVoice);
-      else reply(FALLBACK.a, FALLBACK.l, QUICK, viaVoice);
-    }, 250);
+    if (AI_URL) setTimeout(function () { askAI(label, viaVoice); }, 150);
+    else reply(FALLBACK.a, FALLBACK.l, QUICK, viaVoice);
   }
 
-
-  /* ---------- Real AI for questions the ready-made answers do not cover ---------- */
-  /* Needs GEMINI_API_KEY on the Kinton server (see SETUP-V3.md). If it is off or slow, the normal fallback shows. */
-  var AI_URL = CFG.aiEnabled === false ? '' : String(CFG.apiBase || 'https://kinton-pay.onrender.com').replace(/\/+$/, '') + '/ai/chat';
+  /* ---------- The AI does all the talking ---------- */
+  /* Needs GEMINI_API_KEY on the Kinton server. What it knows about Kinton is AI_SYSTEM in server.js. */
+  var AI_BASE = String(CFG.apiBase || 'https://kinton-pay.onrender.com').replace(/\/+$/, '');
+  var AI_URL = CFG.aiEnabled === false ? '' : AI_BASE + '/ai/chat';
   var aiHist = [];
+
+  /* The AI may end an answer with buttons written as [[Label|target]]. Only these targets are allowed. */
+  var LINKS = {
+    shop: 'shop.html', websites: 'shop.html?cat=Websites', apps: 'shop.html?cat=Apps', branding: 'shop.html?cat=Branding', addons: 'shop.html?cat=Add-ons',
+    services: 'services.html', contact: 'contact.html', about: 'about.html', labs: 'labs.html', cart: 'cart.html', pay: 'pay.html',
+    signin: 'signin.html', signup: 'signup.html', account: 'account.html', terms: 'terms.html', privacy: 'privacy.html', whatsapp: WA_LINK
+  };
+  function splitLinks(text) {
+    var links = [];
+    var clean = String(text).replace(/\[\[([^\]|]{1,40})\|\s*([a-z]+)\s*\]\]/gi, function (_, label, key) {
+      key = key.toLowerCase();
+      if (LINKS[key] && links.length < 2) links.push([label.trim(), LINKS[key], key === 'whatsapp']);
+      return '';
+    }).replace(/\s+\n/g, '\n').trim();
+    return { text: clean, links: links };
+  }
+  function linkRow(links) {
+    var w = document.createElement('div'); w.className = 'kg-links';
+    links.forEach(function (x) {
+      var a = document.createElement('a'); a.textContent = x[0]; a.href = x[1];
+      if (x[2]) { a.target = '_blank'; a.rel = 'noopener'; }
+      w.appendChild(a);
+    });
+    return w;
+  }
+  function wake() { if (AI_URL) { try { fetch(AI_BASE + '/health').catch(function () {}); } catch (e) {} } }
+
   function askAI(q, viaVoice) {
     add('kg-bot', 'Thinking...');
-    var bubble = msgs.lastChild, line = bubble.firstChild, ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 25000);
+    var bubble = msgs.lastChild, line = bubble.firstChild, ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
     fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: q, history: aiHist.slice(-6) }), signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.reply) throw new Error('ai'); return j.reply; }); })
-      .then(function (t) {
-        clearTimeout(to); line.textContent = t; msgs.scrollTop = msgs.scrollHeight;
-        aiHist.push({ role: 'user', text: q }, { role: 'model', text: t });
-        if (voiceOn || viaVoice) speak(t);
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.ok && j.reply) return j.reply;
+          var e = new Error('ai'); e.status = r.status; e.msg = j.error; throw e;
+        });
       })
-      .catch(function () { clearTimeout(to); if (bubble.parentNode) bubble.parentNode.removeChild(bubble); reply(FALLBACK.a, FALLBACK.l, QUICK, viaVoice); });
+      .then(function (t) {
+        clearTimeout(to);
+        var p = splitLinks(t);
+        line.textContent = p.text || t;
+        if (p.links.length) bubble.appendChild(linkRow(p.links));
+        msgs.scrollTop = msgs.scrollHeight;
+        aiHist.push({ role: 'user', text: q }, { role: 'model', text: p.text || t });
+        if (voiceOn || viaVoice) speak(p.text || t);
+      })
+      .catch(function (err) {
+        clearTimeout(to);
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        if (err && err.status === 429 && err.msg) reply(err.msg, null, null, viaVoice);
+        else reply(FALLBACK.a, FALLBACK.l, QUICK, viaVoice);
+      });
   }
 
   /* ---------- Listening (microphone) ---------- */
@@ -341,11 +308,11 @@
   }
 
   function open(restored) {
-    box.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); store('kg_open', '1');
+    box.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); store('kg_open', '1'); wake();
     if (!started) {
       started = true;
       if (restored) add('kg-bot', 'Done. What else can I help with?', null, QUICK);
-      else add('kg-bot', 'Hi! I am the Kinton Guide. Ask me a question, or tell me where to go, like "go to cart". You can type or tap the mic.', null, QUICK);
+      else add('kg-bot', 'Hi! I am the Kinton Guide. Ask me anything about Kinton Technologies, or tell me where to go, like "go to cart". You can type or tap the mic.', null, QUICK);
     }
     if (!restored) setTimeout(function () { input.focus(); }, 50);
   }
