@@ -245,15 +245,30 @@ app.post("/ai/chat", async (req, res) => {
     const hist = (Array.isArray((req.body || {}).history) ? req.body.history : []).slice(-6)
       .filter((m) => m && (m.role === "user" || m.role === "model") && typeof m.text === "string")
       .map((m) => ({ role: m.role, parts: [{ text: m.text.slice(0, 500) }] }));
-    const gen = { maxOutputTokens: 400, temperature: 0.4 };
-    if (/2\.5/.test(AI_MODEL)) gen.thinkingConfig = { thinkingBudget: 0 };
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(AI_MODEL) + ":generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: AI_SYSTEM }] }, contents: [...hist, { role: "user", parts: [{ text: q }] }], generationConfig: gen }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { console.error("Gemini error", r.status, JSON.stringify(j).slice(0, 300)); throw httpErr(502, "The assistant is busy right now."); }
+    const body = (model) => {
+      const gen = { maxOutputTokens: 400, temperature: 0.4 };
+      if (/2\.5/.test(model)) gen.thinkingConfig = { thinkingBudget: 0 };
+      return JSON.stringify({ systemInstruction: { parts: [{ text: AI_SYSTEM }] }, contents: [...hist, { role: "user", parts: [{ text: q }] }], generationConfig: gen });
+    };
+    // Try the main model, retry once if Google is busy, then try backup models (GEMINI_FALLBACK_MODELS, comma separated).
+    const models = [AI_MODEL, ...String(env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash,gemini-2.5-flash-lite").split(",").map((x) => x.trim()).filter((x) => x && x !== AI_MODEL)];
+    let j = {}, ok = false;
+    for (let i = 0; i < models.length && !ok; i++) {
+      for (let attempt = 0; attempt < (i === 0 ? 2 : 1) && !ok; attempt++) {
+        if (attempt) await new Promise((r) => setTimeout(r, 1200));
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(models[i]) + ":generateContent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+          body: body(models[i]),
+        });
+        j = await r.json().catch(() => ({}));
+        if (r.ok) { ok = true; break; }
+        console.error("Gemini error", r.status, "(" + models[i] + ")", JSON.stringify(j).slice(0, 300));
+        if (![429, 500, 503, 404].includes(r.status)) break; // key or request problem: backups will not help
+        if (r.status === 404) break; // model name unknown: go straight to the next model
+      }
+    }
+    if (!ok) throw httpErr(502, "The assistant is busy right now.");
     const reply = ((j.candidates || [])[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
     if (!reply) throw httpErr(502, "The assistant had no answer.");
     res.json({ reply });

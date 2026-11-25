@@ -312,7 +312,7 @@
       if (!holder) { holder = document.createElement('div'); holder.id = 'phone-recaptcha'; document.body.appendChild(holder); }
       holder.innerHTML = '';
       phoneVerifier = new firebase.auth.RecaptchaVerifier(holder, { size: 'invisible' });
-      return wrap(drop.then(function () { return u.linkWithPhoneNumber(phone, phoneVerifier); }).then(function (c) { phoneConfirm = c; return { ok: true }; }).catch(function (e) { try { phoneVerifier.clear(); } catch (x) {} phoneVerifier = null; throw e; }));
+      return wrap(drop.then(function () { return u.linkWithPhoneNumber(phone, phoneVerifier); }).then(function (c) { phoneConfirm = c; return { ok: true }; }).catch(function (e) { try { phoneVerifier.clear(); } catch (x) {} phoneVerifier = null; if (e && e.code === 'auth/operation-not-allowed') throw new Error('This phone number region is not allowed in Firebase yet. The site owner needs to allow Zimbabwe under SMS region policy.'); if (e && e.code === 'auth/billing-not-enabled') throw new Error('This SMS service needs the Firebase Blaze plan. The site owner needs to upgrade.'); throw e; }));
     },
     verifyPhoneOtp: function (code, phone) {
       if (!phoneConfirm) return Promise.reject(new Error('Send a new code first.'));
